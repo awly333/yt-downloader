@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { registerIpcHandlers, setupWindowEvents } from './ipc'
 import { initUpdater } from './updater'
+import { ensureBinariesExecutable } from './ytdlp'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -45,6 +46,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ensureBinariesExecutable()
   createWindow()
   initUpdater()
 })

@@ -16,6 +16,14 @@ files:
   - dist-electron/**
   - package.json
 
+# Bundle yt-dlp and ffmpeg so users need no pre-installed tools
+extraResources:
+  - from: resources/bin/
+    to: bin/
+    filter:
+      - "yt-dlp*"
+      - "ffmpeg*"
+
 # ─── Windows ─────────────────────────────────────────────────────────────────
 win:
   icon: build/icon.ico

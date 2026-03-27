@@ -1,17 +1,50 @@
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs'
+import { app } from 'electron'
 import type { VideoInfo, SubtitleTrack, ParsedVideoFormat, DownloadOptions, DownloadProgress } from '../shared/types'
+
+// ── Bundled binary resolution ─────────────────────────────────
+
+function getResourcesDir(): string {
+  if (app.isPackaged) {
+    // Packaged: binaries are in <resourcesPath>/bin/
+    return process.resourcesPath
+  }
+  // Development: project root/resources/  (__dirname = dist-electron/main/)
+  return path.join(__dirname, '..', '..', 'resources')
+}
+
+function getBinPath(name: string): string {
+  const ext = process.platform === 'win32' ? '.exe' : ''
+  return path.join(getResourcesDir(), 'bin', `${name}${ext}`)
+}
+
+/** Ensure bundled binaries are executable on macOS/Linux (safe no-op on Windows). */
+export function ensureBinariesExecutable(): void {
+  if (process.platform === 'win32') return
+  for (const name of ['yt-dlp', 'ffmpeg']) {
+    const bin = getBinPath(name)
+    try {
+      if (fs.existsSync(bin)) fs.chmodSync(bin, 0o755)
+    } catch {
+      // Non-fatal — binary may still be executable from the download step
+    }
+  }
+}
 
 // ── Parse URL ────────────────────────────────────────────────
 
 export async function parseUrl(url: string, cookieBrowser?: string): Promise<VideoInfo> {
   return new Promise((resolve, reject) => {
-    const args = ['--dump-json', '--no-warnings']
+    const ytdlpBin = getBinPath('yt-dlp')
+    const ffmpegBin = getBinPath('ffmpeg')
+
+    const args = ['--dump-json', '--no-warnings', '--ffmpeg-location', ffmpegBin]
     if (cookieBrowser) args.push('--cookies-from-browser', cookieBrowser)
     args.push(url)
 
-    const proc = spawn('yt-dlp', args, {
+    const proc = spawn(ytdlpBin, args, {
       windowsHide: true,
     })
 
@@ -41,7 +74,10 @@ export async function parseUrl(url: string, cookieBrowser?: string): Promise<Vid
     })
 
     proc.on('error', (err) => {
-      reject(new Error(`Failed to run yt-dlp: ${err.message}`))
+      const msg = (err as NodeJS.ErrnoException).code === 'ENOENT'
+        ? `yt-dlp not found at ${getBinPath('yt-dlp')}. Run: npm run download-binaries`
+        : `Failed to run yt-dlp: ${err.message}`
+      reject(new Error(msg))
     })
   })
 }
@@ -299,10 +335,12 @@ export function startDownload(
   options: DownloadOptions,
   onProgress: (progress: DownloadProgress) => void,
 ): void {
-  const args = buildYtdlpArgs(options)
-  console.log('[yt-dlp] spawning:', 'yt-dlp', args.join(' '))
+  const ytdlpBin = getBinPath('yt-dlp')
+  const ffmpegBin = getBinPath('ffmpeg')
+  const args = buildYtdlpArgs(options, ffmpegBin)
+  console.log('[yt-dlp] spawning:', ytdlpBin, args.join(' '))
 
-  const proc = spawn('yt-dlp', args, { windowsHide: true })
+  const proc = spawn(ytdlpBin, args, { windowsHide: true })
   activeDownloads.set(taskId, { proc, options })
 
   let stderrBuf = ''
@@ -404,12 +442,13 @@ function cleanupPartialFiles(options: DownloadOptions): void {
   }
 }
 
-function buildYtdlpArgs(options: DownloadOptions): string[] {
+function buildYtdlpArgs(options: DownloadOptions, ffmpegBin: string): string[] {
   const outputPath = path.join(options.saveDir, `${options.fileName}.%(ext)s`)
   const args: string[] = [
     '--newline',           // Force progress on separate lines
     '-o', outputPath,
     '--no-warnings',
+    '--ffmpeg-location', ffmpegBin,
   ]
 
   const isAudioOnly = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac'].includes(options.fileType)
