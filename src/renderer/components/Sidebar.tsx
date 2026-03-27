@@ -7,29 +7,34 @@ import { useSettingsStore } from '../stores/settingsStore'
 
 export function Sidebar() {
   const { setView, view, setShowAbout } = useAppStore()
-  const { tasks, setPendingDelete, clearCompleted, clearCompletedAndFiles } = useDownloadStore()
+  const { tasks, setPendingDelete, clearCompleted, clearCompletedAndFiles, cancelAndRemoveAllActive } = useDownloadStore()
   const { settings } = useSettingsStore()
 
   const hasCompleted = tasks.some((t) => t.status === 'completed')
+  const hasActive = tasks.some((t) => ['downloading', 'queued', 'merging'].includes(t.status))
   const hasTasks = tasks.length > 0
 
   const handleClearAll = () => {
     if (!hasTasks) return
 
-    if (hasCompleted) {
-      if (settings.skipDeleteConfirm) {
-        clearCompletedAndFiles()
-      } else {
-        setPendingDelete({ type: 'all' })
-      }
+    if (!hasCompleted && !hasActive) {
+      // Only failed tasks — remove without dialog
+      for (const t of tasks) useDownloadStore.getState().removeTask(t.id)
+      return
+    }
+
+    if (hasActive && !hasCompleted) {
+      // Only active tasks — cancel + remove + clean files, no dialog
+      cancelAndRemoveAllActive()
+      return
+    }
+
+    // Has completed tasks (possibly also active) — show dialog
+    if (settings.skipDeleteConfirm) {
+      clearCompletedAndFiles()
+      if (hasActive) cancelAndRemoveAllActive()
     } else {
-      // No completed tasks — just remove failed/other non-active items
-      const nonActive = tasks.filter(
-        (t) => t.status !== 'downloading' && t.status !== 'queued' && t.status !== 'merging'
-      )
-      for (const t of nonActive) {
-        useDownloadStore.getState().removeTask(t.id)
-      }
+      setPendingDelete({ type: 'all', cancelActive: hasActive })
     }
   }
 

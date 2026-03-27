@@ -108,6 +108,7 @@ export function registerIpcHandlers(): void {
   })
 
   // Delete all files for a completed download: video + subtitle files (filename.*)
+  // After deleting, attempt to remove saveDir if it is now empty (handles playlist folders).
   ipcMain.handle('shell:delete-download-files', async (_event, saveDir: string, fileName: string) => {
     try {
       const files = await fs.promises.readdir(saveDir)
@@ -119,6 +120,13 @@ export function registerIpcHandlers(): void {
           } catch { /* ignore individual failures */ }
         }
       }
+      // Try to remove the directory — succeeds only if it is now empty
+      try {
+        const remaining = await fs.promises.readdir(saveDir)
+        if (remaining.length === 0) {
+          await fs.promises.rmdir(saveDir)
+        }
+      } catch { /* not empty or already gone — ignore */ }
       return true
     } catch {
       return false

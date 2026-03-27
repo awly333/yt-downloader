@@ -60,6 +60,7 @@ export interface PlaylistEntry {
 export interface PlaylistInfo {
   title: string
   url: string
+  thumbnail: string
   entryCount: number
   entries: PlaylistEntry[]
 }

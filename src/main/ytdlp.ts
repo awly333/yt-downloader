@@ -111,9 +111,32 @@ function transformPlaylistInfo(raw: any, originalUrl: string): PlaylistInfo {
     uploader: e.uploader || e.channel || raw.uploader || raw.channel || '',
   }))
 
+  // yt-dlp rarely provides a playlist-level thumbnail with --flat-playlist.
+  // Priority: raw.thumbnail → raw.thumbnails[] → first entry's thumbnail → YouTube hqdefault
+  let thumbnail = raw.thumbnail || ''
+
+  if (!thumbnail && Array.isArray(raw.thumbnails) && raw.thumbnails.length > 0) {
+    const sorted = [...raw.thumbnails].sort((a: any, b: any) => (b.width || 0) - (a.width || 0))
+    thumbnail = sorted[0]?.url || ''
+  }
+
+  if (!thumbnail && Array.isArray(raw.entries) && raw.entries.length > 0) {
+    const first = raw.entries[0]
+    // Try entry-level thumbnails array first
+    if (Array.isArray(first.thumbnails) && first.thumbnails.length > 0) {
+      const sorted = [...first.thumbnails].sort((a: any, b: any) => (b.width || 0) - (a.width || 0))
+      thumbnail = sorted[0]?.url || ''
+    }
+    // Fall back to constructing from video ID
+    if (!thumbnail && first.id) {
+      thumbnail = `https://i.ytimg.com/vi/${first.id}/hqdefault.jpg`
+    }
+  }
+
   return {
     title: raw.title || 'Untitled Playlist',
     url: originalUrl,
+    thumbnail,
     entryCount: raw.playlist_count || entries.length,
     entries,
   }
@@ -444,11 +467,16 @@ export function cancelDownload(taskId: string): void {
   const entry = activeDownloads.get(taskId)
   if (!entry) return
 
-  entry.proc.kill('SIGTERM')
   activeDownloads.delete(taskId)
 
-  // Clean up partial/temp files left by yt-dlp
-  cleanupPartialFiles(entry.options)
+  // Clean up AFTER the process actually exits — files are locked until then.
+  // Register the handler before killing so we never miss the close event.
+  entry.proc.once('close', () => {
+    cleanupPartialFiles(entry.options)
+  })
+
+  // On Windows SIGTERM is ignored by many processes; kill() without args sends SIGKILL-equivalent
+  entry.proc.kill()
 }
 
 /**
@@ -476,6 +504,13 @@ function cleanupPartialFiles(options: DownloadOptions): void {
         }
       }
     }
+    // Remove directory if now empty (handles playlist subfolders)
+    try {
+      if (fs.readdirSync(saveDir).length === 0) {
+        fs.rmdirSync(saveDir)
+        console.log(`[cleanup] Removed empty directory: ${saveDir}`)
+      }
+    } catch { /* not empty or already gone */ }
   } catch (err) {
     console.error('[cleanup] Failed to read directory:', err)
   }

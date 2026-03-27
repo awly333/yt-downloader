@@ -5,7 +5,7 @@ import { useDownloadStore, type PendingDelete } from '../stores/downloadStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
 export function ConfirmDeleteDialog() {
-  const { pendingDelete, setPendingDelete, removeTask, removeTaskAndFile, clearCompleted, clearCompletedAndFiles } = useDownloadStore()
+  const { pendingDelete, setPendingDelete, removeTask, removeTaskAndFile, clearCompleted, clearCompletedAndFiles, cancelAndRemoveAllActive } = useDownloadStore()
   const { settings, updateSettings } = useSettingsStore()
   const [dontAskAgain, setDontAskAgain] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -36,12 +36,14 @@ export function ConfirmDeleteDialog() {
     ? 'Choose whether to remove from the list only, or also delete the downloaded file from disk.'
     : 'Choose whether to remove all completed downloads from the list, or also delete their files from disk.'
 
-  const handleListOnly = () => {
+  const handleListOnly = async () => {
     if (!pendingDelete) return
     if (pendingDelete.type === 'single') {
       removeTask(pendingDelete.taskId)
     } else {
       clearCompleted()
+      // Active tasks always get cancelled + cleaned regardless of dialog choice
+      if (pendingDelete.cancelActive) await cancelAndRemoveAllActive()
     }
     if (dontAskAgain) {
       updateSettings({ skipDeleteConfirm: true })
@@ -56,6 +58,8 @@ export function ConfirmDeleteDialog() {
       await removeTaskAndFile(pendingDelete.taskId)
     } else {
       await clearCompletedAndFiles()
+      // Active tasks always get cancelled + cleaned regardless of dialog choice
+      if (pendingDelete.cancelActive) await cancelAndRemoveAllActive()
     }
     if (dontAskAgain) {
       updateSettings({ skipDeleteConfirm: true })

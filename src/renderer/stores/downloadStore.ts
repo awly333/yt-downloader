@@ -3,8 +3,14 @@ import type { DownloadTask, DownloadProgress } from '../../shared/types'
 
 export type PendingDelete =
   | { type: 'single'; taskId: string }
-  | { type: 'all' }
+  | { type: 'all'; cancelActive: boolean }
   | null
+
+const ACTIVE_STATUSES = ['downloading', 'queued', 'merging'] as const
+type ActiveStatus = typeof ACTIVE_STATUSES[number]
+function isActive(status: string): status is ActiveStatus {
+  return ACTIVE_STATUSES.includes(status as ActiveStatus)
+}
 
 interface DownloadStore {
   tasks: DownloadTask[]
@@ -18,6 +24,7 @@ interface DownloadStore {
   removeTaskAndFile: (taskId: string) => Promise<void>
   clearCompleted: () => void
   clearCompletedAndFiles: () => Promise<void>
+  cancelAndRemoveAllActive: () => Promise<void>
   retryTask: (taskId: string) => void
   setPendingDelete: (pending: PendingDelete) => void
 }
@@ -69,7 +76,6 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
             : task.filePath,
         }
       })
-      // Save when a download completes or fails (final states worth persisting)
       if (progress.status === 'completed' || progress.status === 'failed') {
         debouncedSave(next)
       }
@@ -112,6 +118,21 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     }
     set((state) => {
       const next = state.tasks.filter((t) => t.status !== 'completed')
+      debouncedSave(next)
+      return { tasks: next }
+    })
+  },
+
+  // Cancel all in-progress/queued/merging tasks, remove from list.
+  // File cleanup is handled inside cancelDownload (after process exits).
+  cancelAndRemoveAllActive: async () => {
+    const active = get().tasks.filter((t) => isActive(t.status))
+    const activeIds = new Set(active.map((t) => t.id))
+    for (const task of active) {
+      window.electronAPI.cancelDownload(task.id)
+    }
+    set((state) => {
+      const next = state.tasks.filter((t) => !activeIds.has(t.id))
       debouncedSave(next)
       return { tasks: next }
     })

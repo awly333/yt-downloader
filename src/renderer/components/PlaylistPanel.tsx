@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Folder, Download, X, Check, ListVideo, Clock } from 'lucide-react'
+import { Folder, Download, X, Check, ListVideo, Clock, Globe, List } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -32,6 +32,30 @@ const AUDIO_FORMAT_OPTIONS = [
   { value: 'worst', label: 'Worst quality' },
 ]
 
+const SUBTITLE_FORMAT_OPTIONS = [
+  { value: 'original', label: 'Original', sublabel: 'Keep as downloaded' },
+  { value: 'srt', label: 'SRT', sublabel: 'Most compatible' },
+  { value: 'vtt', label: 'VTT', sublabel: 'Web standard' },
+  { value: 'ass', label: 'ASS', sublabel: 'Advanced styling' },
+  { value: 'lrc', label: 'LRC', sublabel: 'Lyrics format' },
+]
+
+// Common subtitle languages to offer for playlist downloads
+const SUBTITLE_LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'zh-Hans', label: '简体中文' },
+  { code: 'zh-Hant', label: '繁體中文' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ko', label: '한국어' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'pt', label: 'Português' },
+  { code: 'ru', label: 'Русский' },
+  { code: 'ar', label: 'العربية' },
+  { code: 'hi', label: 'हिन्दी' },
+]
+
 const AUDIO_ONLY_TYPES = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac']
 
 export function PlaylistPanel() {
@@ -40,23 +64,48 @@ export function PlaylistPanel() {
   const { addTask } = useDownloadStore()
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [folderName, setFolderName] = useState('')
   const [saveDir, setSaveDir] = useState('')
   const [fileType, setFileType] = useState('mp4')
   const [videoFormat, setVideoFormat] = useState('best')
   const [audioFormat, setAudioFormat] = useState('best')
+  const [selectedSubs, setSelectedSubs] = useState<string[]>([])
+  const [subtitleFormat, setSubtitleFormat] = useState('original')
+  const subtitleContainerRef = useRef<HTMLDivElement>(null)
+  const autoSelectedPlaylistRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (parsedPlaylist) {
-      // Select all entries by default
       setSelected(new Set(parsedPlaylist.entries.map((e) => e.id)))
+      setFolderName(sanitizeFileName(parsedPlaylist.title))
+      // Auto-select subtitle language only when a new playlist is parsed
+      if (autoSelectedPlaylistRef.current !== parsedPlaylist.url) {
+        autoSelectedPlaylistRef.current = parsedPlaylist.url
+        const defaultLang = pickDefaultSubLang(settings.language)
+        setSelectedSubs(defaultLang ? [defaultLang] : [])
+      }
     }
     setSaveDir(settings.downloadDir)
     setFileType(settings.defaultFileType)
     setVideoFormat(settings.defaultVideoFormat)
     setAudioFormat(settings.defaultAudioFormat)
+    setSubtitleFormat(settings.defaultSubtitleFormat || 'original')
   }, [parsedPlaylist, settings])
 
+  // Auto-scroll subtitle list to the pre-selected language
+  useEffect(() => {
+    if (selectedSubs.length === 0 || !subtitleContainerRef.current) return
+    const lang = selectedSubs[0]
+    const el = subtitleContainerRef.current.querySelector(`[data-lang="${lang}"]`)
+    if (!el) return
+    const timer = setTimeout(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300)
+    return () => clearTimeout(timer)
+  }, [selectedSubs])
+
   if (!parsedPlaylist) return null
+
+  // Final download path: saveDir / folderName
+  const finalDir = saveDir && folderName ? `${saveDir}/${folderName}` : saveDir || folderName
 
   const allSelected = selected.size === parsedPlaylist.entries.length
   const noneSelected = selected.size === 0
@@ -72,11 +121,14 @@ export function PlaylistPanel() {
   }
 
   const toggleAll = () => {
-    if (allSelected) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(parsedPlaylist.entries.map((e) => e.id)))
-    }
+    if (allSelected) setSelected(new Set())
+    else setSelected(new Set(parsedPlaylist.entries.map((e) => e.id)))
+  }
+
+  const toggleSub = (code: string) => {
+    setSelectedSubs((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    )
   }
 
   const handleSelectFolder = async () => {
@@ -92,14 +144,14 @@ export function PlaylistPanel() {
       const options: DownloadOptions = {
         url: entry.url,
         fileName: sanitizeFileName(entry.title),
-        saveDir,
+        saveDir: finalDir,
         fileType,
         videoFormat: isAudioOnly ? 'best' : videoFormat,
         audioFormat,
         useCookies,
         cookieBrowser: settings.cookieBrowser,
-        subtitleLangs: [],
-        subtitleFormat: 'original',
+        subtitleLangs: selectedSubs,
+        subtitleFormat,
       }
 
       try {
@@ -141,19 +193,37 @@ export function PlaylistPanel() {
       ">
         {/* Header */}
         <div className="flex items-start justify-between p-5 pb-4 border-b border-border-subtle">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="
-              w-10 h-10 rounded-[--radius-md] flex-shrink-0
-              bg-accent-soft
-              flex items-center justify-center
-            ">
-              <ListVideo className="w-5 h-5 text-accent" />
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            {/* Thumbnail or fallback icon */}
+            <div className="relative w-20 h-12 flex-shrink-0">
+              {parsedPlaylist.thumbnail ? (
+                <img
+                  src={parsedPlaylist.thumbnail}
+                  alt=""
+                  className="w-20 h-12 rounded-[--radius-md] object-cover shadow-sm"
+                />
+              ) : (
+                <div className="w-20 h-12 rounded-[--radius-md] bg-accent-soft flex items-center justify-center">
+                  <ListVideo className="w-6 h-6 text-accent" />
+                </div>
+              )}
+              {/* Playlist badge overlay */}
+              <div className="
+                absolute bottom-1 right-1
+                bg-black/60 rounded-[3px] px-1 py-0.5
+                flex items-center gap-0.5
+              ">
+                <List className="w-2.5 h-2.5 text-white" />
+                <span className="text-[9px] text-white font-medium leading-none">
+                  {parsedPlaylist.entryCount}
+                </span>
+              </div>
             </div>
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-text-primary truncate leading-snug">
                 {parsedPlaylist.title}
               </p>
-              <p className="text-[11px] text-text-tertiary mt-0.5">
+              <p className="text-[11px] text-text-tertiary mt-1">
                 {parsedPlaylist.entryCount} videos
               </p>
             </div>
@@ -192,7 +262,7 @@ export function PlaylistPanel() {
           </button>
 
           {/* Scrollable entries */}
-          <div className="max-h-[280px] overflow-y-auto">
+          <div className="max-h-[240px] overflow-y-auto">
             {parsedPlaylist.entries.map((entry, idx) => (
               <PlaylistEntryRow
                 key={entry.id}
@@ -207,6 +277,23 @@ export function PlaylistPanel() {
 
         {/* Download options */}
         <div className="p-5 space-y-4">
+          {/* Folder name */}
+          <Field label="Folder name">
+            <input
+              type="text"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              className="
+                w-full px-3 py-2 rounded-[--radius-md]
+                bg-surface-sunken border border-border
+                text-[13px] text-text-primary
+                placeholder:text-text-placeholder
+                outline-none focus:border-accent/30 focus:shadow-[0_0_0_3px_rgba(232,101,74,0.06)]
+                transition-all duration-150
+              "
+            />
+          </Field>
+
           {/* Save to */}
           <Field label="Save to">
             <button
@@ -226,31 +313,78 @@ export function PlaylistPanel() {
           {/* Format row */}
           <div className={`grid gap-3 ${isAudioOnly ? 'grid-cols-2' : 'grid-cols-3'}`}>
             <Field label="File type">
-              <Dropdown
-                value={fileType}
-                onChange={setFileType}
-                options={FILE_TYPE_OPTIONS}
-              />
+              <Dropdown value={fileType} onChange={setFileType} options={FILE_TYPE_OPTIONS} />
             </Field>
-
             {!isAudioOnly && (
               <Field label="Video quality">
-                <Dropdown
-                  value={videoFormat}
-                  onChange={setVideoFormat}
-                  options={VIDEO_FORMAT_OPTIONS}
-                />
+                <Dropdown value={videoFormat} onChange={setVideoFormat} options={VIDEO_FORMAT_OPTIONS} />
               </Field>
             )}
-
             <Field label="Audio quality">
-              <Dropdown
-                value={audioFormat}
-                onChange={setAudioFormat}
-                options={AUDIO_FORMAT_OPTIONS}
-              />
+              <Dropdown value={audioFormat} onChange={setAudioFormat} options={AUDIO_FORMAT_OPTIONS} />
             </Field>
           </div>
+
+          {/* Subtitles */}
+          <Field label={
+            <span className="flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5" />
+              Subtitles
+              <span className="text-text-placeholder font-normal">
+                ({SUBTITLE_LANGUAGES.length})
+              </span>
+            </span>
+          }>
+            <div
+              ref={subtitleContainerRef}
+              className="
+                max-h-[30vh] min-h-[80px] overflow-y-auto
+                rounded-[--radius-md] border border-border
+                bg-surface-sunken
+              "
+            >
+              {SUBTITLE_LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  data-lang={lang.code}
+                  onClick={() => toggleSub(lang.code)}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2
+                    text-left text-[13px]
+                    transition-colors duration-100 cursor-pointer
+                    border-b border-border-subtle last:border-b-0
+                    ${selectedSubs.includes(lang.code)
+                      ? 'bg-accent-soft text-text-primary'
+                      : 'text-text-secondary hover:bg-surface-hover'
+                    }
+                  `}
+                >
+                  <div className={`
+                    w-4 h-4 rounded-[3px] border-2 flex items-center justify-center flex-shrink-0
+                    transition-all duration-150
+                    ${selectedSubs.includes(lang.code) ? 'bg-accent border-accent' : 'border-border'}
+                  `}>
+                    {selectedSubs.includes(lang.code) && (
+                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                    )}
+                  </div>
+                  <span className="flex-1 truncate">{lang.label}</span>
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          {/* Subtitle format — only when subtitles selected */}
+          {selectedSubs.length > 0 && (
+            <Field label="Subtitle format">
+              <Dropdown
+                value={subtitleFormat}
+                onChange={setSubtitleFormat}
+                options={SUBTITLE_FORMAT_OPTIONS}
+                compact
+              />
+            </Field>
+          )}
         </div>
 
         {/* Download button */}
@@ -263,12 +397,11 @@ export function PlaylistPanel() {
             className={`
               w-full py-3 rounded-[--radius-md]
               text-[14px] font-semibold
-              shadow-[0_2px_8px_rgba(232,101,74,0.2)]
               transition-colors duration-150
               flex items-center justify-center gap-2
               ${noneSelected
-                ? 'bg-surface-sunken text-text-placeholder cursor-not-allowed shadow-none'
-                : 'bg-accent text-white hover:bg-accent-hover cursor-pointer'
+                ? 'bg-surface-sunken text-text-placeholder cursor-not-allowed'
+                : 'bg-accent text-white hover:bg-accent-hover shadow-[0_2px_8px_rgba(232,101,74,0.2)] cursor-pointer'
               }
             `}
           >
@@ -343,6 +476,20 @@ function PlaylistEntryRow({
 }
 
 // ── Helpers ──────────────────────────────────────────────────
+
+// Map app language setting → best matching code in SUBTITLE_LANGUAGES
+function pickDefaultSubLang(appLang: string): string | null {
+  const map: Record<string, string> = {
+    en: 'en',
+    zh: 'zh-Hans',
+    ja: 'ja',
+    ko: 'ko',
+    es: 'es',
+    fr: 'fr',
+    de: 'de',
+  }
+  return map[appLang] ?? 'en'
+}
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[<>:"/\\|?*]/g, '_').trim()
