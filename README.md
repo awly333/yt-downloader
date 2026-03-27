@@ -1,3 +1,7 @@
+<div align="right">
+  <a href="README.zh-CN.md">简体中文</a>
+</div>
+
 # YT Downloader
 
 > A minimal, beautiful desktop downloader for YouTube and 1000+ sites.
@@ -5,7 +9,6 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555?style=flat-square)](https://github.com/awly333/yt-downloader/releases)
 [![License](https://img.shields.io/badge/license-MIT-E8654A?style=flat-square)](LICENSE)
 [![Built with Electron](https://img.shields.io/badge/built%20with-Electron-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org)
-[![中文文档](https://img.shields.io/badge/文档-中文-red?style=flat-square)](README.zh-CN.md)
 
 ---
 

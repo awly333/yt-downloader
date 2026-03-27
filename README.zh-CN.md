@@ -1,3 +1,7 @@
+<div align="right">
+  <a href="README.md">English</a>
+</div>
+
 # YT Downloader
 
 > 简洁美观的桌面视频下载工具，支持 YouTube 及 1000+ 个网站。
@@ -5,7 +9,6 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555?style=flat-square)](https://github.com/awly333/yt-downloader/releases)
 [![License](https://img.shields.io/badge/license-MIT-E8654A?style=flat-square)](LICENSE)
 [![Built with Electron](https://img.shields.io/badge/built%20with-Electron-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org)
-[![English](https://img.shields.io/badge/文档-English-blue?style=flat-square)](README.md)
 
 ---
 

@@ -25,15 +25,12 @@ mkdirSync(binDir, { recursive: true })
 const isWin = process.platform === 'win32'
 const ext  = isWin ? '.exe' : ''
 
+const require = createRequire(import.meta.url)
+
 // ─── 1. FFmpeg  (from ffmpeg-static npm package) ─────────────────────────────
 try {
-  const require = createRequire(import.meta.url)
   const ffmpegSrc = require('ffmpeg-static')
-
-  if (!ffmpegSrc || !existsSync(ffmpegSrc)) {
-    throw new Error('ffmpeg-static binary missing — run `npm install` first')
-  }
-
+  if (!ffmpegSrc || !existsSync(ffmpegSrc)) throw new Error('binary missing — run `npm install` first')
   const ffmpegDest = join(binDir, `ffmpeg${ext}`)
   copyFileSync(ffmpegSrc, ffmpegDest)
   if (!isWin) chmodSync(ffmpegDest, 0o755)
@@ -42,7 +39,19 @@ try {
   console.error('✗  ffmpeg  skipped:', err.message)
 }
 
-// ─── 2. yt-dlp  (from GitHub releases) ───────────────────────────────────────
+// ─── 2. FFprobe  (from @ffprobe-installer/ffprobe) ────────────────────────────
+try {
+  const { path: ffprobeSrc } = require('@ffprobe-installer/ffprobe')
+  if (!ffprobeSrc || !existsSync(ffprobeSrc)) throw new Error('binary missing — run `npm install` first')
+  const ffprobeDest = join(binDir, `ffprobe${ext}`)
+  copyFileSync(ffprobeSrc, ffprobeDest)
+  if (!isWin) chmodSync(ffprobeDest, 0o755)
+  console.log(`✓  ffprobe  →  resources/bin/ffprobe${ext}`)
+} catch (err) {
+  console.error('✗  ffprobe skipped:', err.message)
+}
+
+// ─── 3. yt-dlp  (from GitHub releases) ───────────────────────────────────────
 const ytdlpAsset = isWin
   ? 'yt-dlp.exe'
   : process.platform === 'darwin'

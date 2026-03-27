@@ -23,7 +23,7 @@ function getBinPath(name: string): string {
 /** Ensure bundled binaries are executable on macOS/Linux (safe no-op on Windows). */
 export function ensureBinariesExecutable(): void {
   if (process.platform === 'win32') return
-  for (const name of ['yt-dlp', 'ffmpeg']) {
+  for (const name of ['yt-dlp', 'ffmpeg', 'ffprobe']) {
     const bin = getBinPath(name)
     try {
       if (fs.existsSync(bin)) fs.chmodSync(bin, 0o755)
@@ -40,7 +40,8 @@ export async function parseUrl(url: string, cookieBrowser?: string): Promise<Vid
     const ytdlpBin = getBinPath('yt-dlp')
     const ffmpegBin = getBinPath('ffmpeg')
 
-    const args = ['--dump-json', '--no-warnings', '--ffmpeg-location', ffmpegBin]
+    const ffprobeBin = getBinPath('ffprobe')
+    const args = ['--dump-json', '--no-warnings', '--ffmpeg-location', ffmpegBin, '--ffprobe-location', ffprobeBin]
     if (cookieBrowser) args.push('--cookies-from-browser', cookieBrowser)
     args.push(url)
 
@@ -443,12 +444,14 @@ function cleanupPartialFiles(options: DownloadOptions): void {
 }
 
 function buildYtdlpArgs(options: DownloadOptions, ffmpegBin: string): string[] {
+  const ffprobeBin = getBinPath('ffprobe')
   const outputPath = path.join(options.saveDir, `${options.fileName}.%(ext)s`)
   const args: string[] = [
     '--newline',           // Force progress on separate lines
     '-o', outputPath,
     '--no-warnings',
     '--ffmpeg-location', ffmpegBin,
+    '--ffprobe-location', ffprobeBin,
   ]
 
   const isAudioOnly = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac'].includes(options.fileType)

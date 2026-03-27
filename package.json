@@ -29,6 +29,7 @@
     "url": "https://github.com/awly333/yt-downloader.git"
   },
   "devDependencies": {
+    "@ffprobe-installer/ffprobe": "^2.1.2",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
