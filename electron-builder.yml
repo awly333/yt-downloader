@@ -1,0 +1,88 @@
+appId: com.awly333.yt-downloader
+productName: YT Downloader
+copyright: Copyright © 2024 awly333
+
+# Icon (electron-builder selects .ico on Win, .icns on Mac, .png on Linux)
+icon: build/icon
+
+directories:
+  output: release
+  buildResources: build
+
+# Files to include in the package
+# electron-builder automatically includes node_modules for packages in "dependencies"
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+
+# ─── Windows ─────────────────────────────────────────────────────────────────
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+  artifactName: YT-Downloader-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: YT Downloader
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  deleteAppDataOnUninstall: false
+
+# ─── macOS ───────────────────────────────────────────────────────────────────
+mac:
+  icon: build/icon.icns
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  artifactName: YT-Downloader-${version}-mac-${arch}.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  title: YT Downloader ${version}
+  background: build/dmg-background.png
+  icon: build/icon.icns
+  iconSize: 80
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 150
+      y: 195
+      type: file
+    - x: 390
+      y: 195
+      type: link
+      path: /Applications
+
+# ─── Linux ───────────────────────────────────────────────────────────────────
+linux:
+  icon: build/icon.png
+  category: Network
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  artifactName: YT-Downloader-${version}-linux-${arch}.${ext}
+
+# ─── Auto-updater — publish to GitHub Releases ───────────────────────────────
+publish:
+  provider: github
+  owner: awly333
+  repo: yt-downloader
+  releaseType: release

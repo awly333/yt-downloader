@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@theme {
+  /* Arc Browser inspired warm palette */
+  --color-surface: #FAF9F7;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-sunken: #F3F1EE;
+  --color-surface-hover: #F0EDE9;
+
+  --color-border: #E8E4DF;
+  --color-border-subtle: #F0EDE9;
+
+  --color-text-primary: #1A1816;
+  --color-text-secondary: #6B6560;
+  --color-text-tertiary: #9C9590;
+  --color-text-placeholder: #BEB8B2;
+
+  --color-accent: #E8654A;
+  --color-accent-hover: #D55A41;
+  --color-accent-soft: #FDF0ED;
+
+  --color-success: #3DAA6D;
+  --color-success-soft: #EDF7F1;
+  --color-warning: #E5A836;
+  --color-warning-soft: #FDF6E9;
+  --color-error: #D94452;
+  --color-error-soft: #FDF0F1;
+
+  --color-sidebar: #F5F3F0;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  /* Windows overlay buttons width (~138px for min/max/close) */
+  --titlebar-inset-right: 138px;
+}
+
+/* Title bar — real layout element for window dragging */
+.titlebar {
+  height: 44px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  background: var(--color-surface);
+}
+
+/* Left portion matches sidebar, with the sidebar's right border */
+.titlebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--color-sidebar);
+  border-right: 1px solid var(--color-border);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}

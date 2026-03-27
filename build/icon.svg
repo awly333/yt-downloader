@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0%" stop-color="#F28060"/>
+      <stop offset="100%" stop-color="#BF3820"/>
+    </linearGradient>
+    <!-- Subtle inner shadow for depth -->
+    <filter id="inner-shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background: rounded square (iOS-style, ~22% radius) -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+
+  <!-- Subtle top-left highlight for depth -->
+  <ellipse cx="320" cy="200" rx="280" ry="160" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Download arrow: vertical shaft (pill shape) -->
+  <rect x="468" y="196" width="88" height="356" rx="44" fill="white"/>
+
+  <!--
+    Arrowhead: downward-pointing triangle
+    Width: 256→768 (512px wide) at y=524
+    Tip: 512,764
+    Shaft overlaps triangle top by 32px (556-524=32) for seamless join
+  -->
+  <polygon points="256,524 768,524 512,764" fill="white"/>
+
+  <!-- Bottom tray: pill-shaped line representing the download destination -->
+  <rect x="244" y="812" width="536" height="76" rx="38" fill="white" opacity="0.88"/>
+</svg>

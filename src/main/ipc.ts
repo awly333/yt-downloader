@@ -1,0 +1,140 @@
+import { ipcMain, dialog, shell, app, BrowserWindow, type WebContents } from 'electron'
+import path from 'path'
+import fs from 'fs'
+import { parseUrl, startDownload, cancelDownload } from './ytdlp'
+import type { DownloadOptions, AppSettings } from '../shared/types'
+
+function getSettingsPath() {
+  return path.join(app.getPath('userData'), 'settings.json')
+}
+
+function readSettings(): AppSettings {
+  const defaults: AppSettings = {
+    downloadDir: app.getPath('downloads'),
+    defaultFileType: 'mp4',
+    defaultVideoFormat: 'best',
+    defaultAudioFormat: 'best',
+    cookieBrowser: 'chrome',
+    language: 'en',
+    skipDeleteConfirm: false,
+    defaultSubtitleFormat: 'original',
+  }
+  try {
+    const data = fs.readFileSync(getSettingsPath(), 'utf-8')
+    return { ...defaults, ...JSON.parse(data) }
+  } catch {
+    return defaults
+  }
+}
+
+function writeSettings(partial: Partial<AppSettings>): void {
+  const current = readSettings()
+  const updated = { ...current, ...partial }
+  fs.writeFileSync(getSettingsPath(), JSON.stringify(updated, null, 2))
+}
+
+export function setupWindowEvents(win: BrowserWindow): void {
+  win.on('maximize', () => win.webContents.send('window:maximized', true))
+  win.on('unmaximize', () => win.webContents.send('window:maximized', false))
+}
+
+export function registerIpcHandlers(): void {
+  // Window controls
+  ipcMain.handle('window:minimize', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize()
+  })
+  ipcMain.handle('window:maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win?.isMaximized()) win.unmaximize()
+    else win?.maximize()
+  })
+  ipcMain.handle('window:close', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close()
+  })
+  ipcMain.handle('window:is-maximized', (event) => {
+    return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false
+  })
+  ipcMain.handle('ytdlp:parse-url', async (_event, url: string, useCookies: boolean, cookieBrowser: string) => {
+    return parseUrl(url, useCookies ? cookieBrowser : undefined)
+  })
+
+  ipcMain.handle('ytdlp:start-download', async (event, options: DownloadOptions) => {
+    const taskId = `dl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const win = BrowserWindow.fromWebContents(event.sender)
+
+    startDownload(taskId, options, (progress) => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('download:progress', progress)
+      }
+    })
+
+    return taskId
+  })
+
+  ipcMain.handle('ytdlp:cancel-download', async (_event, taskId: string) => {
+    cancelDownload(taskId)
+  })
+
+  ipcMain.handle('dialog:select-folder', async (_event, defaultPath?: string) => {
+    const result = await dialog.showOpenDialog({
+      defaultPath: defaultPath || app.getPath('downloads'),
+      properties: ['openDirectory'],
+    })
+    return result.canceled ? null : result.filePaths[0]
+  })
+
+  ipcMain.handle('shell:open-file', async (_event, filePath: string) => {
+    await shell.openPath(filePath)
+  })
+
+  ipcMain.handle('shell:open-folder', async (_event, filePath: string) => {
+    shell.showItemInFolder(filePath)
+  })
+
+  ipcMain.handle('shell:delete-file', async (_event, filePath: string) => {
+    try {
+      await fs.promises.unlink(filePath)
+      return true
+    } catch {
+      return false
+    }
+  })
+
+  // Delete all files for a completed download: video + subtitle files (filename.*)
+  ipcMain.handle('shell:delete-download-files', async (_event, saveDir: string, fileName: string) => {
+    try {
+      const files = await fs.promises.readdir(saveDir)
+      const prefix = fileName + '.'
+      for (const file of files) {
+        if (file.startsWith(prefix)) {
+          try {
+            await fs.promises.unlink(path.join(saveDir, file))
+          } catch { /* ignore individual failures */ }
+        }
+      }
+      return true
+    } catch {
+      return false
+    }
+  })
+
+  ipcMain.handle('store:get-settings', async () => {
+    return readSettings()
+  })
+
+  ipcMain.handle('store:set-settings', async (_event, partial: Partial<AppSettings>) => {
+    writeSettings(partial)
+  })
+
+  ipcMain.handle('app:get-downloads-dir', async () => {
+    return app.getPath('downloads')
+  })
+
+  ipcMain.handle('app:get-version', async () => {
+    return app.getVersion()
+  })
+
+  ipcMain.handle('shell:open-external', async (_event, url: string) => {
+    await shell.openExternal(url)
+  })
+}

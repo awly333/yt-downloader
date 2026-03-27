@@ -1,0 +1,51 @@
+{
+  "name": "yt-downloader",
+  "version": "1.0.0",
+  "description": "A beautiful video downloader powered by yt-dlp",
+  "main": "dist-electron/main/index.js",
+  "scripts": {
+    "dev": "node build-electron.mjs && concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "build": "node build-electron.mjs && vite build",
+    "preview": "vite preview",
+    "electron:build": "npm run build && electron-builder",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "keywords": ["youtube", "downloader", "yt-dlp", "electron", "video"],
+  "author": {
+    "name": "awly333",
+    "url": "https://github.com/awly333"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/awly333/yt-downloader",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/awly333/yt-downloader.git"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "electron": "^41.0.4",
+    "electron-builder": "^26.8.1",
+    "esbuild": "^0.27.4",
+    "png-to-ico": "^3.0.1",
+    "postcss": "^8.5.8",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.2",
+    "wait-on": "^9.0.4"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "electron-updater": "^6.8.3",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tailwindcss": "^4.2.2",
+    "zustand": "^5.0.12"
+  }
+}
