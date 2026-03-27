@@ -24,7 +24,7 @@ Built with Electron, React, and Tailwind CSS.
 
 ## Screenshots
 
-> Screenshots coming soon.
+![YT Downloader](screenshot.png)
 
 ---
 
@@ -37,6 +37,8 @@ Built with Electron, React, and Tailwind CSS.
 - **Browser cookie passthrough** — access age-restricted or private content via Chrome, Edge, Firefox, or Brave
 - **Live progress** — real-time speed, ETA, and percentage for every download
 - **Cancel & retry** — full control over in-progress downloads
+- **Playlist support** — detect playlist URLs, select individual videos, and queue them all at once
+- **Bandwidth limit** — cap download speed per task to avoid saturating your connection
 - **Drag & drop** — drop a URL directly into the window
 - **Custom output directory** — save anywhere
 - **Auto-updater** — notified automatically when a new release is available

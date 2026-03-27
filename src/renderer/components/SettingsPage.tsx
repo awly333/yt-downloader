@@ -34,6 +34,14 @@ const SUBTITLE_FORMAT_OPTIONS = [
   { value: 'ass', label: 'ASS', sublabel: 'Advanced styling' },
   { value: 'lrc', label: 'LRC', sublabel: 'Lyrics format' },
 ]
+const BANDWIDTH_OPTIONS = [
+  { value: 'unlimited', label: 'Unlimited', sublabel: 'No speed limit' },
+  { value: '512k', label: '512 KB/s' },
+  { value: '1m', label: '1 MB/s' },
+  { value: '2m', label: '2 MB/s' },
+  { value: '5m', label: '5 MB/s' },
+  { value: '10m', label: '10 MB/s' },
+]
 const BROWSER_OPTIONS = [
   { value: 'chrome', label: 'Chrome' },
   { value: 'edge', label: 'Edge' },
@@ -138,6 +146,18 @@ export function SettingsPage() {
               value={settings.defaultSubtitleFormat || 'original'}
               onChange={(v) => updateSettings({ defaultSubtitleFormat: v })}
               options={SUBTITLE_FORMAT_OPTIONS}
+            />
+          </SettingRow>
+
+          {/* Bandwidth limit */}
+          <SettingRow
+            label="Download speed limit"
+            hint="Limit maximum download speed per task"
+          >
+            <Dropdown
+              value={settings.bandwidthLimit || 'unlimited'}
+              onChange={(v) => updateSettings({ bandwidthLimit: v })}
+              options={BANDWIDTH_OPTIONS}
             />
           </SettingRow>
 

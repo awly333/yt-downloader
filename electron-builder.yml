@@ -24,6 +24,10 @@ extraResources:
       - "yt-dlp*"
       - "ffmpeg*"
       - "ffprobe*"
+  - from: build/icon.png
+    to: icon.png
+  - from: build/icon.ico
+    to: icon.ico
 
 # ─── Windows ─────────────────────────────────────────────────────────────────
 win:

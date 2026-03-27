@@ -46,6 +46,23 @@ export function DownloadItem({ task }: DownloadItemProps) {
     }
   }
 
+  const handleContextMenu = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    const action = await window.electronAPI.showContextMenu(
+      task.id, task.status, !!task.filePath
+    )
+    if (!action) return
+    switch (action) {
+      case 'open-file': handleOpenFile(); break
+      case 'open-folder': handleOpenFolder(); break
+      case 'retry': handleRetry(); break
+      case 'cancel': handleCancel(); break
+      case 'copy-url': navigator.clipboard.writeText(task.options.url); break
+      case 'remove': removeTask(task.id); break
+      case 'delete-file': handleDelete(); break
+    }
+  }
+
   return (
     <motion.div
       layout
@@ -53,6 +70,7 @@ export function DownloadItem({ task }: DownloadItemProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.25 }}
+      onContextMenu={handleContextMenu}
       className="
         group relative
         px-3 py-2.5 mx-1 mb-1

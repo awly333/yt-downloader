@@ -47,6 +47,27 @@ export interface VideoInfo {
   audioFormats: ParsedVideoFormat[] // detailed audio-only formats
 }
 
+// ── Playlist ─────────────────────────────────────────────────
+
+export interface PlaylistEntry {
+  id: string
+  title: string
+  url: string
+  duration: number
+  uploader: string
+}
+
+export interface PlaylistInfo {
+  title: string
+  url: string
+  entryCount: number
+  entries: PlaylistEntry[]
+}
+
+export type ParseResult =
+  | { type: 'video'; video: VideoInfo }
+  | { type: 'playlist'; playlist: PlaylistInfo }
+
 // ── Download Task ────────────────────────────────────────────
 
 export type DownloadStatus =
@@ -102,12 +123,13 @@ export interface AppSettings {
   language: string
   skipDeleteConfirm: boolean
   defaultSubtitleFormat: string
+  bandwidthLimit: string           // 'unlimited', '512k', '1m', '2m', '5m', '10m'
 }
 
 // ── IPC Channels ─────────────────────────────────────────────
 
 export interface IpcApi {
-  parseUrl: (url: string, useCookies: boolean, cookieBrowser: string) => Promise<VideoInfo>
+  parseUrl: (url: string, useCookies: boolean, cookieBrowser: string) => Promise<ParseResult>
   startDownload: (options: DownloadOptions) => Promise<string>  // returns taskId
   cancelDownload: (taskId: string) => Promise<void>
   selectFolder: (defaultPath?: string) => Promise<string | null>
@@ -121,6 +143,12 @@ export interface IpcApi {
   getAppVersion: () => Promise<string>
   openExternal: (url: string) => Promise<void>
   onDownloadProgress: (callback: (progress: DownloadProgress) => void) => () => void
+  // History persistence
+  loadHistory: () => Promise<DownloadTask[]>
+  saveHistory: (tasks: DownloadTask[]) => Promise<void>
+  // Context menu
+  showContextMenu: (taskId: string, status: DownloadStatus, hasFile: boolean) => Promise<string | null>
+  onContextMenuAction: (callback: (action: { taskId: string; action: string }) => void) => () => void
   minimizeWindow: () => Promise<void>
   maximizeWindow: () => Promise<void>
   closeWindow: () => Promise<void>

@@ -2,7 +2,7 @@ import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { app } from 'electron'
-import type { VideoInfo, SubtitleTrack, ParsedVideoFormat, DownloadOptions, DownloadProgress } from '../shared/types'
+import type { VideoInfo, SubtitleTrack, ParsedVideoFormat, DownloadOptions, DownloadProgress, ParseResult, PlaylistInfo } from '../shared/types'
 
 // ── Bundled binary resolution ─────────────────────────────────
 
@@ -35,13 +35,20 @@ export function ensureBinariesExecutable(): void {
 
 // ── Parse URL ────────────────────────────────────────────────
 
-export async function parseUrl(url: string, cookieBrowser?: string): Promise<VideoInfo> {
+export async function parseUrl(url: string, cookieBrowser?: string): Promise<ParseResult> {
   return new Promise((resolve, reject) => {
     const ytdlpBin = getBinPath('yt-dlp')
     const ffmpegBin = getBinPath('ffmpeg')
 
-    const ffprobeBin = getBinPath('ffprobe')
-    const args = ['--dump-json', '--no-warnings', '--ffmpeg-location', ffmpegBin, '--ffprobe-location', ffprobeBin]
+    // --flat-playlist: don't extract each playlist entry's full info (fast)
+    // --dump-single-json: output one JSON object (for playlists, includes entries array)
+    // --ffmpeg-location: point to the bin directory so yt-dlp finds both ffmpeg and ffprobe
+    const args = [
+      '--flat-playlist',
+      '--dump-single-json',
+      '--no-warnings',
+      '--ffmpeg-location', path.dirname(ffmpegBin),
+    ]
     if (cookieBrowser) args.push('--cookies-from-browser', cookieBrowser)
     args.push(url)
 
@@ -68,7 +75,19 @@ export async function parseUrl(url: string, cookieBrowser?: string): Promise<Vid
 
       try {
         const raw = JSON.parse(stdout)
-        resolve(transformVideoInfo(raw, url))
+
+        // yt-dlp sets _type='playlist' for playlist URLs
+        if (raw._type === 'playlist' && Array.isArray(raw.entries)) {
+          resolve({
+            type: 'playlist',
+            playlist: transformPlaylistInfo(raw, url),
+          })
+        } else {
+          resolve({
+            type: 'video',
+            video: transformVideoInfo(raw, url),
+          })
+        }
       } catch (e) {
         reject(new Error(`Failed to parse yt-dlp output: ${(e as Error).message}`))
       }
@@ -81,6 +100,23 @@ export async function parseUrl(url: string, cookieBrowser?: string): Promise<Vid
       reject(new Error(msg))
     })
   })
+}
+
+function transformPlaylistInfo(raw: any, originalUrl: string): PlaylistInfo {
+  const entries = (raw.entries || []).map((e: any) => ({
+    id: e.id || e.url || '',
+    title: e.title || 'Untitled',
+    url: e.url || e.webpage_url || '',
+    duration: e.duration || 0,
+    uploader: e.uploader || e.channel || raw.uploader || raw.channel || '',
+  }))
+
+  return {
+    title: raw.title || 'Untitled Playlist',
+    url: originalUrl,
+    entryCount: raw.playlist_count || entries.length,
+    entries,
+  }
 }
 
 function transformVideoInfo(raw: any, originalUrl: string): VideoInfo {
@@ -334,11 +370,13 @@ const activeDownloads = new Map<string, ActiveDownload>()
 export function startDownload(
   taskId: string,
   options: DownloadOptions,
+  bandwidthLimit: string | undefined,
   onProgress: (progress: DownloadProgress) => void,
 ): void {
   const ytdlpBin = getBinPath('yt-dlp')
   const ffmpegBin = getBinPath('ffmpeg')
   const args = buildYtdlpArgs(options, ffmpegBin)
+  if (bandwidthLimit) args.push('--limit-rate', bandwidthLimit)
   console.log('[yt-dlp] spawning:', ytdlpBin, args.join(' '))
 
   const proc = spawn(ytdlpBin, args, { windowsHide: true })
@@ -444,14 +482,12 @@ function cleanupPartialFiles(options: DownloadOptions): void {
 }
 
 function buildYtdlpArgs(options: DownloadOptions, ffmpegBin: string): string[] {
-  const ffprobeBin = getBinPath('ffprobe')
   const outputPath = path.join(options.saveDir, `${options.fileName}.%(ext)s`)
   const args: string[] = [
     '--newline',           // Force progress on separate lines
     '-o', outputPath,
     '--no-warnings',
-    '--ffmpeg-location', ffmpegBin,
-    '--ffprobe-location', ffprobeBin,
+    '--ffmpeg-location', path.dirname(ffmpegBin),
   ]
 
   const isAudioOnly = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac'].includes(options.fileType)

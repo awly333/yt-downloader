@@ -18,6 +18,7 @@ const defaultSettings: AppSettings = {
   language: 'en',
   skipDeleteConfirm: false,
   defaultSubtitleFormat: 'original',
+  bandwidthLimit: 'unlimited',
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({

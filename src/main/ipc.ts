@@ -1,11 +1,15 @@
-import { ipcMain, dialog, shell, app, BrowserWindow, type WebContents } from 'electron'
+import { ipcMain, dialog, shell, app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { parseUrl, startDownload, cancelDownload } from './ytdlp'
-import type { DownloadOptions, AppSettings } from '../shared/types'
+import type { DownloadOptions, DownloadTask, DownloadStatus, AppSettings, ParseResult } from '../shared/types'
 
 function getSettingsPath() {
   return path.join(app.getPath('userData'), 'settings.json')
+}
+
+function getHistoryPath() {
+  return path.join(app.getPath('userData'), 'download-history.json')
 }
 
 function readSettings(): AppSettings {
@@ -18,6 +22,7 @@ function readSettings(): AppSettings {
     language: 'en',
     skipDeleteConfirm: false,
     defaultSubtitleFormat: 'original',
+    bandwidthLimit: 'unlimited',
   }
   try {
     const data = fs.readFileSync(getSettingsPath(), 'utf-8')
@@ -61,8 +66,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('ytdlp:start-download', async (event, options: DownloadOptions) => {
     const taskId = `dl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const win = BrowserWindow.fromWebContents(event.sender)
+    const settings = readSettings()
+    const bandwidthLimit = settings.bandwidthLimit !== 'unlimited' ? settings.bandwidthLimit : undefined
 
-    startDownload(taskId, options, (progress) => {
+    startDownload(taskId, options, bandwidthLimit, (progress) => {
       if (win && !win.isDestroyed()) {
         win.webContents.send('download:progress', progress)
       }
@@ -136,5 +143,76 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('shell:open-external', async (_event, url: string) => {
     await shell.openExternal(url)
+  })
+
+  // ── Download history persistence ──────────────────────────────
+
+  ipcMain.handle('history:load', async () => {
+    try {
+      const data = fs.readFileSync(getHistoryPath(), 'utf-8')
+      return JSON.parse(data) as DownloadTask[]
+    } catch {
+      return []
+    }
+  })
+
+  ipcMain.handle('history:save', async (_event, tasks: DownloadTask[]) => {
+    // Only persist completed and failed tasks (not in-progress ones)
+    const persistable = tasks
+      .filter((t) => t.status === 'completed' || t.status === 'failed')
+      .map((t) => ({ ...t, speed: '', eta: '' }))
+    fs.writeFileSync(getHistoryPath(), JSON.stringify(persistable, null, 2))
+  })
+
+  // ── Native context menu for download items ────────────────────
+
+  ipcMain.handle('context-menu:show', async (event, taskId: string, status: DownloadStatus, hasFile: boolean) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+
+    return new Promise<string | null>((resolve) => {
+      const items: Electron.MenuItemConstructorOptions[] = []
+
+      if (status === 'completed' && hasFile) {
+        items.push(
+          { label: 'Open file', click: () => resolve('open-file') },
+          { label: 'Open folder', click: () => resolve('open-folder') },
+          { type: 'separator' },
+        )
+      }
+      if (status === 'failed') {
+        items.push(
+          { label: 'Retry', click: () => resolve('retry') },
+        )
+      }
+      if (status === 'downloading' || status === 'queued') {
+        items.push(
+          { label: 'Cancel', click: () => resolve('cancel') },
+        )
+      }
+
+      items.push(
+        { label: 'Copy URL', click: () => resolve('copy-url') },
+      )
+
+      if (status === 'completed' || status === 'failed') {
+        items.push(
+          { type: 'separator' },
+          { label: 'Remove from list', click: () => resolve('remove') },
+        )
+        if (status === 'completed' && hasFile) {
+          items.push(
+            { label: 'Delete file', click: () => resolve('delete-file') },
+          )
+        }
+      }
+
+      const menu = Menu.buildFromTemplate(items)
+      menu.popup({ window: win })
+      menu.on('menu-will-close', () => {
+        // If no item was clicked, resolve null after a tick
+        setTimeout(() => resolve(null), 100)
+      })
+    })
   })
 }

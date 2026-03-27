@@ -27,7 +27,7 @@ function simplifyError(raw: string): string {
 export function URLInput() {
   const [url, setUrl] = useState('')
   const [isFocused, setIsFocused] = useState(false)
-  const { isParsing, setIsParsing, setParsedVideo, setParseError, parseError, useCookies, setUseCookies } = useAppStore()
+  const { isParsing, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError, parseError, useCookies, setUseCookies } = useAppStore()
   const { settings, updateSettings } = useSettingsStore()
 
   const hasUrl = url.trim().length > 0
@@ -40,13 +40,17 @@ export function URLInput() {
     setParseError(null)
 
     try {
-      const videoInfo = await window.electronAPI.parseUrl(trimmed, useCookies, settings.cookieBrowser)
-      setParsedVideo(videoInfo)
+      const result = await window.electronAPI.parseUrl(trimmed, useCookies, settings.cookieBrowser)
+      if (result.type === 'playlist') {
+        setParsedPlaylist(result.playlist)
+      } else {
+        setParsedVideo(result.video)
+      }
       setUrl('')
     } catch (err: any) {
       setParseError(simplifyError(err.message || 'Failed to parse URL'))
     }
-  }, [url, isParsing, useCookies, settings.cookieBrowser, setIsParsing, setParsedVideo, setParseError])
+  }, [url, isParsing, useCookies, settings.cookieBrowser, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit()

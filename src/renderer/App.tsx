@@ -13,11 +13,12 @@ import { useDownloadStore } from './stores/downloadStore'
 export function App() {
   const { view } = useAppStore()
   const { loadSettings } = useSettingsStore()
-  const { updateProgress } = useDownloadStore()
+  const { updateProgress, loadHistory } = useDownloadStore()
 
   useEffect(() => {
     loadSettings()
-  }, [loadSettings])
+    loadHistory()
+  }, [loadSettings, loadHistory])
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.onDownloadProgress((progress) => {

@@ -9,7 +9,9 @@ export type PendingDelete =
 interface DownloadStore {
   tasks: DownloadTask[]
   pendingDelete: PendingDelete
+  loaded: boolean
 
+  loadHistory: () => Promise<void>
   addTask: (task: DownloadTask) => void
   updateProgress: (progress: DownloadProgress) => void
   removeTask: (taskId: string) => void
@@ -24,21 +26,37 @@ function getFilePath(task: DownloadTask): string {
   return `${task.options.saveDir}/${task.options.fileName}.${task.options.fileType}`
 }
 
+// Debounced save — writes to disk at most once per second
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+function debouncedSave(tasks: DownloadTask[]) {
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    window.electronAPI.saveHistory(tasks)
+  }, 1000)
+}
+
 export const useDownloadStore = create<DownloadStore>((set, get) => ({
   tasks: [],
   pendingDelete: null,
+  loaded: false,
+
+  loadHistory: async () => {
+    const tasks = await window.electronAPI.loadHistory()
+    set({ tasks, loaded: true })
+  },
 
   addTask: (task) => {
-    set((state) => ({
-      tasks: [task, ...state.tasks],
-    }))
+    set((state) => {
+      const next = [task, ...state.tasks]
+      debouncedSave(next)
+      return { tasks: next }
+    })
   },
 
   updateProgress: (progress) => {
-    set((state) => ({
-      tasks: state.tasks.map((task) => {
+    set((state) => {
+      const next = state.tasks.map((task) => {
         if (task.id !== progress.taskId) return task
-
         return {
           ...task,
           status: progress.status,
@@ -50,14 +68,21 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
             ? getFilePath(task)
             : task.filePath,
         }
-      }),
-    }))
+      })
+      // Save when a download completes or fails (final states worth persisting)
+      if (progress.status === 'completed' || progress.status === 'failed') {
+        debouncedSave(next)
+      }
+      return { tasks: next }
+    })
   },
 
   removeTask: (taskId) => {
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.id !== taskId),
-    }))
+    set((state) => {
+      const next = state.tasks.filter((t) => t.id !== taskId)
+      debouncedSave(next)
+      return { tasks: next }
+    })
   },
 
   removeTaskAndFile: async (taskId) => {
@@ -65,15 +90,19 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     if (task) {
       await window.electronAPI.deleteDownloadFiles(task.options.saveDir, task.options.fileName)
     }
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.id !== taskId),
-    }))
+    set((state) => {
+      const next = state.tasks.filter((t) => t.id !== taskId)
+      debouncedSave(next)
+      return { tasks: next }
+    })
   },
 
   clearCompleted: () => {
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.status !== 'completed'),
-    }))
+    set((state) => {
+      const next = state.tasks.filter((t) => t.status !== 'completed')
+      debouncedSave(next)
+      return { tasks: next }
+    })
   },
 
   clearCompletedAndFiles: async () => {
@@ -81,9 +110,11 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
     for (const task of completed) {
       await window.electronAPI.deleteDownloadFiles(task.options.saveDir, task.options.fileName)
     }
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.status !== 'completed'),
-    }))
+    set((state) => {
+      const next = state.tasks.filter((t) => t.status !== 'completed')
+      debouncedSave(next)
+      return { tasks: next }
+    })
   },
 
   retryTask: (taskId) => {

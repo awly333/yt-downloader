@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { URLInput } from './URLInput'
 import { OptionsPanel } from './OptionsPanel'
+import { PlaylistPanel } from './PlaylistPanel'
 import { ArrowDown, Link2 } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -69,7 +70,7 @@ function simplifyError(raw: string): string {
 }
 
 export function MainArea() {
-  const { parsedVideo, isParsing, setIsParsing, setParsedVideo, setParseError, useCookies } = useAppStore()
+  const { parsedVideo, parsedPlaylist, isParsing, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError, useCookies } = useAppStore()
   const { settings } = useSettingsStore()
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
@@ -104,8 +105,12 @@ export function MainArea() {
     setIsParsing(true)
     setParseError(null)
     try {
-      const videoInfo = await window.electronAPI.parseUrl(text, useCookies, settings.cookieBrowser)
-      setParsedVideo(videoInfo)
+      const result = await window.electronAPI.parseUrl(text, useCookies, settings.cookieBrowser)
+      if (result.type === 'playlist') {
+        setParsedPlaylist(result.playlist)
+      } else {
+        setParsedVideo(result.video)
+      }
     } catch (err: any) {
       setParseError(simplifyError(err.message || 'Failed to parse URL'))
     }
@@ -150,12 +155,12 @@ export function MainArea() {
         transition={{ layout: { duration: 1.1, ease: [0.22, 1, 0.36, 1] } }}
         className={`
           flex flex-col items-center w-full max-w-[640px] px-6
-          ${(parsedVideo || isParsing) ? 'pt-6 pb-8' : 'flex-1 justify-center -mt-6'}
+          ${(parsedVideo || parsedPlaylist || isParsing) ? 'pt-6 pb-8' : 'flex-1 justify-center -mt-6'}
         `}
       >
         {/* Empty state illustration */}
         <AnimatePresence>
-          {!parsedVideo && !isParsing && (
+          {!parsedVideo && !parsedPlaylist && !isParsing && (
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -205,8 +210,9 @@ export function MainArea() {
 
         {/* Parse skeleton / Options Panel */}
         <AnimatePresence mode="wait">
-          {isParsing && !parsedVideo && <ParseSkeleton key="skeleton" />}
+          {isParsing && !parsedVideo && !parsedPlaylist && <ParseSkeleton key="skeleton" />}
           {parsedVideo && <OptionsPanel key="options" />}
+          {parsedPlaylist && <PlaylistPanel key="playlist" />}
         </AnimatePresence>
       </motion.div>
     </motion.main>

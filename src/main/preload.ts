@@ -1,12 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DownloadOptions, DownloadProgress, AppSettings } from '../shared/types'
+import type { DownloadOptions, DownloadTask, DownloadProgress, DownloadStatus, AppSettings, ParseResult } from '../shared/types'
 
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
 
   // yt-dlp
-  parseUrl: (url: string, useCookies: boolean, cookieBrowser: string) => ipcRenderer.invoke('ytdlp:parse-url', url, useCookies, cookieBrowser),
+  parseUrl: (url: string, useCookies: boolean, cookieBrowser: string) => ipcRenderer.invoke('ytdlp:parse-url', url, useCookies, cookieBrowser) as Promise<ParseResult>,
   startDownload: (options: DownloadOptions) => ipcRenderer.invoke('ytdlp:start-download', options),
   cancelDownload: (taskId: string) => ipcRenderer.invoke('ytdlp:cancel-download', taskId),
 
@@ -25,6 +25,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDownloadsDir: () => ipcRenderer.invoke('app:get-downloads-dir'),
   getAppVersion: () => ipcRenderer.invoke('app:get-version') as Promise<string>,
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
+
+  // History persistence
+  loadHistory: () => ipcRenderer.invoke('history:load') as Promise<DownloadTask[]>,
+  saveHistory: (tasks: DownloadTask[]) => ipcRenderer.invoke('history:save', tasks),
+
+  // Context menu
+  showContextMenu: (taskId: string, status: DownloadStatus, hasFile: boolean) =>
+    ipcRenderer.invoke('context-menu:show', taskId, status, hasFile) as Promise<string | null>,
 
   // Window controls
   minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
