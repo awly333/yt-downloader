@@ -38,16 +38,15 @@ win:
   artifactName: YT-Downloader-Setup-${version}.${ext}
 
 nsis:
-  oneClick: true
+  oneClick: false
   perMachine: false
-  allowElevation: true
+  allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: YT Downloader
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
   deleteAppDataOnUninstall: false
-  runAfterFinish: true
 
 # ─── macOS ───────────────────────────────────────────────────────────────────
 mac:
