@@ -446,7 +446,7 @@ export function startDownload(
     const effectiveOptions = noSubs ? { ...options, subtitleLangs: [] } : options
     const args = buildYtdlpArgs(effectiveOptions, ffmpegBin)
     if (bandwidthLimit) args.push('--limit-rate', bandwidthLimit)
-    console.log('[yt-dlp] spawning%s:', noSubs ? ' (no-subs retry)' : '', ytdlpBin, args.join(' '))
+    console.log(`[yt-dlp] spawning${noSubs ? ' (no-subs retry)' : ''}:`, ytdlpBin, args.join(' '))
 
     const proc = spawn(ytdlpBin, args, { windowsHide: true })
     activeDownloads.set(taskId, { proc, options })

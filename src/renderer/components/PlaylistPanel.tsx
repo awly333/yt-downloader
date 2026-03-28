@@ -73,7 +73,6 @@ export function PlaylistPanel() {
   const [audioFormat, setAudioFormat] = useState('best')
   const [selectedSubs, setSelectedSubs] = useState<string[]>([])
   const [subtitleFormat, setSubtitleFormat] = useState('original')
-  const subtitleContainerRef = useRef<HTMLDivElement>(null)
   const initializedPlaylistRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -92,16 +91,6 @@ export function PlaylistPanel() {
     setAudioFormat(settings.defaultAudioFormat)
     setSubtitleFormat(settings.defaultSubtitleFormat || 'original')
   }, [parsedPlaylist, settings])
-
-  // Auto-scroll subtitle list to the pre-selected language
-  useEffect(() => {
-    if (selectedSubs.length === 0 || !subtitleContainerRef.current) return
-    const lang = selectedSubs[0]
-    const el = subtitleContainerRef.current.querySelector(`[data-lang="${lang}"]`)
-    if (!el) return
-    const timer = setTimeout(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300)
-    return () => clearTimeout(timer)
-  }, [selectedSubs])
 
   if (!parsedPlaylist) return null
 
@@ -337,7 +326,6 @@ export function PlaylistPanel() {
             </span>
           }>
             <div
-              ref={subtitleContainerRef}
               className="
                 max-h-[30vh] min-h-[80px] overflow-y-auto
                 rounded-[--radius-md] border border-border
