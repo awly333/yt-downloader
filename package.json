@@ -1,6 +1,6 @@
 {
   "name": "yt-downloader",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A beautiful video downloader powered by yt-dlp",
   "main": "dist-electron/main/index.js",
   "scripts": {
