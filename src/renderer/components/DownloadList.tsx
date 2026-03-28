@@ -2,9 +2,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Download } from 'lucide-react'
 import { useDownloadStore } from '../stores/downloadStore'
 import { DownloadItem } from './DownloadItem'
+import { useTranslation } from '../i18n'
 
 export function DownloadList() {
   const { tasks } = useDownloadStore()
+  const t = useTranslation()
 
   if (tasks.length === 0) {
     return (
@@ -23,10 +25,10 @@ export function DownloadList() {
           <Download className="w-5 h-5 text-text-placeholder" />
         </div>
         <p className="text-[13px] text-text-tertiary text-center leading-relaxed">
-          No downloads yet
+          {t.noDownloads}
         </p>
         <p className="text-[11px] text-text-placeholder text-center mt-1">
-          Paste a URL to get started
+          {t.pasteUrl}
         </p>
       </motion.div>
     )

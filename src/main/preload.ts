@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('app:get-version') as Promise<string>,
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
   getCookiesDir: () => ipcRenderer.invoke('app:get-cookies-dir') as Promise<string>,
+  uninstallApp: () => ipcRenderer.invoke('app:uninstall') as Promise<void>,
 
   // History persistence
   loadHistory: () => ipcRenderer.invoke('history:load') as Promise<DownloadTask[]>,

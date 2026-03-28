@@ -1,8 +1,42 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { useTranslation } from '../i18n'
 
 interface Props { children: ReactNode }
 interface State { hasError: boolean; error: Error | null }
+
+function ErrorFallback({ message }: { message?: string }) {
+  const t = useTranslation()
+  return (
+    <div className="flex flex-col items-center justify-center h-screen w-screen bg-surface gap-5">
+      <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
+        <AlertTriangle className="w-7 h-7 text-error" />
+      </div>
+      <div className="text-center">
+        <h2 className="text-[18px] font-semibold text-text-primary mb-1.5">
+          {t.somethingWrong}
+        </h2>
+        <p className="text-[13px] text-text-tertiary max-w-[320px] leading-relaxed">
+          {message || t.unexpectedError}
+        </p>
+      </div>
+      <button
+        onClick={() => window.location.reload()}
+        className="
+          flex items-center gap-2 px-4 py-2.5
+          rounded-[--radius-md]
+          bg-accent text-white
+          text-[13px] font-medium
+          hover:bg-accent-hover transition-colors
+          cursor-pointer
+        "
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
+        {t.reloadApp}
+      </button>
+    </div>
+  )
+}
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -20,35 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen w-screen bg-surface gap-5">
-          <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
-            <AlertTriangle className="w-7 h-7 text-error" />
-          </div>
-          <div className="text-center">
-            <h2 className="text-[18px] font-semibold text-text-primary mb-1.5">
-              Something went wrong
-            </h2>
-            <p className="text-[13px] text-text-tertiary max-w-[320px] leading-relaxed">
-              {this.state.error?.message || 'An unexpected error occurred.'}
-            </p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="
-              flex items-center gap-2 px-4 py-2.5
-              rounded-[--radius-md]
-              bg-accent text-white
-              text-[13px] font-medium
-              hover:bg-accent-hover transition-colors
-              cursor-pointer
-            "
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Reload app
-          </button>
-        </div>
-      )
+      return <ErrorFallback message={this.state.error?.message} />
     }
     return this.props.children
   }

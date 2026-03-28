@@ -6,36 +6,36 @@ import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useDownloadStore } from '../stores/downloadStore'
 import type { DownloadOptions, DownloadTask, SubtitleTrack } from '../../shared/types'
-
-const FILE_TYPE_OPTIONS = [
-  // Video formats first
-  { value: 'mp4', label: 'MP4', sublabel: 'Video — Most compatible' },
-  { value: 'mkv', label: 'MKV', sublabel: 'Video — High quality container' },
-  { value: 'webm', label: 'WebM', sublabel: 'Video — Web optimized' },
-  { value: 'avi', label: 'AVI', sublabel: 'Video — Legacy format' },
-  // Audio formats
-  { value: 'mp3', label: 'MP3', sublabel: 'Audio — Universal' },
-  { value: 'm4a', label: 'M4A', sublabel: 'Audio — Apple / AAC' },
-  { value: 'opus', label: 'Opus', sublabel: 'Audio — Modern, efficient' },
-  { value: 'wav', label: 'WAV', sublabel: 'Audio — Lossless, large' },
-  { value: 'flac', label: 'FLAC', sublabel: 'Audio — Lossless, compressed' },
-  { value: 'aac', label: 'AAC', sublabel: 'Audio — High quality' },
-]
+import { useTranslation } from '../i18n'
 
 const AUDIO_ONLY_TYPES = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac']
-
-const SUBTITLE_FORMAT_OPTIONS = [
-  { value: 'original', label: 'Original', sublabel: 'Keep as downloaded' },
-  { value: 'srt', label: 'SRT', sublabel: 'Most compatible' },
-  { value: 'vtt', label: 'VTT', sublabel: 'Web standard' },
-  { value: 'ass', label: 'ASS', sublabel: 'Advanced styling' },
-  { value: 'lrc', label: 'LRC', sublabel: 'Lyrics format' },
-]
 
 export function OptionsPanel() {
   const { parsedVideo, resetParse, useCookies } = useAppStore()
   const { settings } = useSettingsStore()
   const { addTask } = useDownloadStore()
+  const t = useTranslation()
+
+  const FILE_TYPE_OPTIONS = [
+    { value: 'mp4', label: 'MP4', sublabel: t.ftVideoCompatible },
+    { value: 'mkv', label: 'MKV', sublabel: t.ftVideoHighQuality },
+    { value: 'webm', label: 'WebM', sublabel: t.ftVideoWebOptimized },
+    { value: 'avi', label: 'AVI', sublabel: t.ftVideoLegacy },
+    { value: 'mp3', label: 'MP3', sublabel: t.ftAudioUniversal },
+    { value: 'm4a', label: 'M4A', sublabel: t.ftAudioAac },
+    { value: 'opus', label: 'Opus', sublabel: t.ftAudioModern },
+    { value: 'wav', label: 'WAV', sublabel: t.ftAudioLosslessLarge },
+    { value: 'flac', label: 'FLAC', sublabel: t.ftAudioLosslessCompressed },
+    { value: 'aac', label: 'AAC', sublabel: t.ftAudioHighQuality },
+  ]
+
+  const SUBTITLE_FORMAT_OPTIONS = [
+    { value: 'original', label: 'Original', sublabel: t.sfKeepAsDownloaded },
+    { value: 'srt', label: 'SRT', sublabel: t.sfMostCompatible },
+    { value: 'vtt', label: 'VTT', sublabel: t.sfWebStandard },
+    { value: 'ass', label: 'ASS', sublabel: t.sfAdvancedStyling },
+    { value: 'lrc', label: 'LRC', sublabel: t.sfLyricsFormat },
+  ]
 
   const [fileName, setFileName] = useState('')
   const [saveDir, setSaveDir] = useState('')
@@ -80,8 +80,8 @@ export function OptionsPanel() {
 
   // Build video format options: Best, Worst first, then all specific formats
   const videoFormatOptions = [
-    { value: 'best', label: 'Best quality' },
-    { value: 'worst', label: 'Worst quality' },
+    { value: 'best', label: t.bestQuality },
+    { value: 'worst', label: t.worstQuality },
     ...parsedVideo.videoFormats.map((f) => {
       const [resW, resH] = (f.resolution || '').split('x')
       // Use width as the primary resolution label (3840p, 1920p, 1280p…)
@@ -100,8 +100,8 @@ export function OptionsPanel() {
 
   // Build audio format options: Best, Worst first, then all specific formats
   const audioFormatOptions = [
-    { value: 'best', label: 'Best quality' },
-    { value: 'worst', label: 'Worst quality' },
+    { value: 'best', label: t.bestQuality },
+    { value: 'worst', label: t.worstQuality },
     ...parsedVideo.audioFormats.map((f) => {
       const bitrate = f.bitrate || null
       const codec = codecShort(f.codec)
@@ -210,7 +210,7 @@ export function OptionsPanel() {
         {/* Options body */}
         <div className="p-5 space-y-4">
           {/* File name */}
-          <Field label="File name">
+          <Field label={t.fileName}>
             <input
               type="text"
               value={fileName}
@@ -227,7 +227,7 @@ export function OptionsPanel() {
           </Field>
 
           {/* Save to */}
-          <Field label="Save to">
+          <Field label={t.saveTo}>
             <button
               onClick={handleSelectFolder}
               className="
@@ -238,13 +238,13 @@ export function OptionsPanel() {
               "
             >
               <Folder className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-              <span className="truncate flex-1">{saveDir || 'Select folder...'}</span>
+              <span className="truncate flex-1">{saveDir || t.selectFolder}</span>
             </button>
           </Field>
 
           {/* Format row */}
           <div className="grid grid-cols-3 gap-3">
-            <Field label="File type">
+            <Field label={t.fileType}>
               <Dropdown
                 value={fileType}
                 onChange={setFileType}
@@ -253,7 +253,7 @@ export function OptionsPanel() {
             </Field>
 
             {!isAudioOnly && (
-              <Field label="Video quality">
+              <Field label={t.videoQuality}>
                 <Dropdown
                   value={videoFormat}
                   onChange={setVideoFormat}
@@ -263,7 +263,7 @@ export function OptionsPanel() {
               </Field>
             )}
 
-            <Field label="Audio quality">
+            <Field label={t.audioQuality}>
               <Dropdown
                 value={audioFormat}
                 onChange={setAudioFormat}
@@ -278,7 +278,7 @@ export function OptionsPanel() {
             <Field label={
               <span className="flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5" />
-                Subtitles
+                {t.subtitles}
                 <span className="text-text-placeholder font-normal">
                   ({parsedVideo.subtitles.length})
                 </span>
@@ -298,6 +298,8 @@ export function OptionsPanel() {
                     subtitle={sub}
                     selected={selectedSubs.includes(sub.language)}
                     onToggle={() => handleToggleSub(sub.language)}
+                    autoLabel={t.autoSubtitle}
+                    manualLabel={t.manualSubtitle}
                   />
                 ))}
               </div>
@@ -306,7 +308,7 @@ export function OptionsPanel() {
 
           {/* Subtitle format — only when subtitles are selected */}
           {selectedSubs.length > 0 && (
-            <Field label="Subtitle format">
+            <Field label={t.subtitleFormat}>
               <Dropdown
                 value={subtitleFormat}
                 onChange={setSubtitleFormat}
@@ -334,7 +336,7 @@ export function OptionsPanel() {
             "
           >
             <Download className="w-4 h-4" />
-            Download
+            {t.download}
           </motion.button>
         </div>
       </div>
@@ -359,10 +361,14 @@ function SubtitleItem({
   subtitle,
   selected,
   onToggle,
+  autoLabel,
+  manualLabel,
 }: {
   subtitle: SubtitleTrack
   selected: boolean
   onToggle: () => void
+  autoLabel: string
+  manualLabel: string
 }) {
   return (
     <button
@@ -392,7 +398,7 @@ function SubtitleItem({
           : 'bg-success-soft text-success'
         }
       `}>
-        {subtitle.isAutomatic ? 'Auto' : 'Manual'}
+        {subtitle.isAutomatic ? autoLabel : manualLabel}
       </span>
     </button>
   )

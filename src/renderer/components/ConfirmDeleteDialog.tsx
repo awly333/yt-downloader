@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, X } from 'lucide-react'
 import { useDownloadStore, type PendingDelete } from '../stores/downloadStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useTranslation } from '../i18n'
 
 export function ConfirmDeleteDialog() {
   const { pendingDelete, setPendingDelete, removeTask, removeTaskAndFile, clearCompleted, clearCompletedAndFiles, cancelAndRemoveAllActive } = useDownloadStore()
   const { settings, updateSettings } = useSettingsStore()
+  const t = useTranslation()
   const [dontAskAgain, setDontAskAgain] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
 
@@ -31,10 +33,8 @@ export function ConfirmDeleteDialog() {
   }, [pendingDelete])
 
   const isSingle = pendingDelete?.type === 'single'
-  const title = isSingle ? 'Remove download?' : 'Clear all completed?'
-  const description = isSingle
-    ? 'Choose whether to remove from the list only, or also delete the downloaded file from disk.'
-    : 'Choose whether to remove all completed downloads from the list, or also delete their files from disk.'
+  const title = isSingle ? t.removeDownloadTitle : t.clearAllCompletedTitle
+  const description = isSingle ? t.removeDialogDescSingle : t.removeDialogDescAll
 
   const handleListOnly = async () => {
     if (!pendingDelete) return
@@ -172,7 +172,7 @@ export function ConfirmDeleteDialog() {
                   )}
                 </button>
                 <span className="text-[11px] text-text-secondary">
-                  Don't ask again, always delete files
+                  {t.dontAskAgain}
                 </span>
               </div>
             </div>
@@ -190,7 +190,7 @@ export function ConfirmDeleteDialog() {
                   cursor-pointer
                 "
               >
-                Remove from list
+                {t.removeFromList}
               </button>
               <button
                 onClick={handleDeleteFiles}
@@ -203,7 +203,7 @@ export function ConfirmDeleteDialog() {
                   cursor-pointer
                 "
               >
-                Delete files too
+                {t.deleteFilesToo}
               </button>
             </div>
           </motion.div>

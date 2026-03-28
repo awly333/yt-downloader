@@ -39,6 +39,7 @@ Built with Electron, React, and Tailwind CSS.
 - **Cancel & retry** — full control over in-progress downloads
 - **Playlist support** — detect playlist URLs, select individual videos, and queue them all at once
 - **Bandwidth limit** — cap download speed per task to avoid saturating your connection
+- **Multi-language UI** — English, 中文, 日本語, 한국어, Español, Français, Deutsch
 - **Drag & drop** — drop a URL directly into the window
 - **Custom output directory** — save anywhere
 - **Auto-updater** — notified automatically when a new release is available

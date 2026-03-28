@@ -4,6 +4,8 @@ import { Link2, ArrowRight, Loader2, Check, FolderOpen } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useTranslation } from '../i18n'
+import type { Translations } from '../i18n'
 
 const BROWSER_OPTIONS = [
   { value: 'chrome', label: 'Chrome' },
@@ -13,12 +15,12 @@ const BROWSER_OPTIONS = [
   { value: 'local', label: 'Local' },
 ]
 
-function simplifyError(raw: string): string {
+function simplifyError(raw: string, t: Translations): string {
   if (raw.includes('Sign in to confirm') || raw.includes('not a bot')) {
-    return 'YouTube requires sign-in for this video. Enable "Use browser cookies" and try again.'
+    return t.errorSignIn
   }
   if ((raw.includes('Could not copy') || raw.includes('DPAPI') || raw.includes('Failed to decrypt')) && raw.includes('cookie')) {
-    return 'Could not read browser cookies. Close the browser and try again, or switch to a different browser.'
+    return t.errorCookies
   }
   // Strip "Error invoking remote method '...': Error:" prefix if present
   const match = raw.match(/Error:\s*(.+)$/s)
@@ -31,6 +33,7 @@ export function URLInput() {
   const [cookiesDir, setCookiesDir] = useState('')
   const { isParsing, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError, parseError, useCookies, setUseCookies } = useAppStore()
   const { settings, updateSettings } = useSettingsStore()
+  const t = useTranslation()
 
   useEffect(() => {
     window.electronAPI.getCookiesDir().then(setCookiesDir)
@@ -54,7 +57,7 @@ export function URLInput() {
       }
       setUrl('')
     } catch (err: any) {
-      setParseError(simplifyError(err.message || 'Failed to parse URL'))
+      setParseError(simplifyError(err.message || 'Failed to parse URL', t))
     }
   }, [url, isParsing, useCookies, settings.cookieBrowser, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError])
 
@@ -105,7 +108,7 @@ export function URLInput() {
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             onKeyDown={handleKeyDown}
-            placeholder={isParsing ? 'Parsing video info...' : 'Paste a video URL here...'}
+            placeholder={isParsing ? t.parsing : t.urlPlaceholder}
             disabled={isParsing}
             className="
               flex-1 py-3.5 px-3
@@ -159,7 +162,7 @@ export function URLInput() {
         </button>
 
         <span className="text-[13px] text-text-secondary font-medium flex-1 select-none">
-          Use browser cookies
+          {t.useCookies}
         </span>
 
         <AnimatePresence>

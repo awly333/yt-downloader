@@ -6,39 +6,7 @@ import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useDownloadStore } from '../stores/downloadStore'
 import type { DownloadOptions, DownloadTask, PlaylistEntry } from '../../shared/types'
-
-const FILE_TYPE_OPTIONS = [
-  { value: 'mp4', label: 'MP4', sublabel: 'Video — Most compatible' },
-  { value: 'mkv', label: 'MKV', sublabel: 'Video — High quality container' },
-  { value: 'webm', label: 'WebM', sublabel: 'Video — Web optimized' },
-  { value: 'mp3', label: 'MP3', sublabel: 'Audio — Universal' },
-  { value: 'm4a', label: 'M4A', sublabel: 'Audio — Apple / AAC' },
-  { value: 'wav', label: 'WAV', sublabel: 'Audio — Lossless, large' },
-]
-
-const VIDEO_FORMAT_OPTIONS = [
-  { value: 'best', label: 'Best quality' },
-  { value: '2160p', label: '2160p (4K)' },
-  { value: '1440p', label: '1440p (2K)' },
-  { value: '1080p', label: '1080p (Full HD)' },
-  { value: '720p', label: '720p (HD)' },
-  { value: '480p', label: '480p' },
-  { value: '360p', label: '360p' },
-  { value: 'worst', label: 'Worst quality' },
-]
-
-const AUDIO_FORMAT_OPTIONS = [
-  { value: 'best', label: 'Best quality' },
-  { value: 'worst', label: 'Worst quality' },
-]
-
-const SUBTITLE_FORMAT_OPTIONS = [
-  { value: 'original', label: 'Original', sublabel: 'Keep as downloaded' },
-  { value: 'srt', label: 'SRT', sublabel: 'Most compatible' },
-  { value: 'vtt', label: 'VTT', sublabel: 'Web standard' },
-  { value: 'ass', label: 'ASS', sublabel: 'Advanced styling' },
-  { value: 'lrc', label: 'LRC', sublabel: 'Lyrics format' },
-]
+import { useTranslation } from '../i18n'
 
 // Common subtitle languages to offer for playlist downloads
 const SUBTITLE_LANGUAGES = [
@@ -62,6 +30,40 @@ export function PlaylistPanel() {
   const { parsedPlaylist, resetParse, useCookies } = useAppStore()
   const { settings } = useSettingsStore()
   const { addTask } = useDownloadStore()
+  const t = useTranslation()
+
+  const FILE_TYPE_OPTIONS = [
+    { value: 'mp4', label: 'MP4', sublabel: t.ftVideoCompatible },
+    { value: 'mkv', label: 'MKV', sublabel: t.ftVideoHighQuality },
+    { value: 'webm', label: 'WebM', sublabel: t.ftVideoWebOptimized },
+    { value: 'mp3', label: 'MP3', sublabel: t.ftAudioUniversal },
+    { value: 'm4a', label: 'M4A', sublabel: t.ftAudioAac },
+    { value: 'wav', label: 'WAV', sublabel: t.ftAudioLosslessLarge },
+  ]
+
+  const VIDEO_FORMAT_OPTIONS = [
+    { value: 'best', label: t.bestQuality },
+    { value: '2160p', label: '2160p (4K)' },
+    { value: '1440p', label: '1440p (2K)' },
+    { value: '1080p', label: '1080p (Full HD)' },
+    { value: '720p', label: '720p (HD)' },
+    { value: '480p', label: '480p' },
+    { value: '360p', label: '360p' },
+    { value: 'worst', label: t.worstQuality },
+  ]
+
+  const AUDIO_FORMAT_OPTIONS = [
+    { value: 'best', label: t.bestQuality },
+    { value: 'worst', label: t.worstQuality },
+  ]
+
+  const SUBTITLE_FORMAT_OPTIONS = [
+    { value: 'original', label: 'Original', sublabel: t.sfKeepAsDownloaded },
+    { value: 'srt', label: 'SRT', sublabel: t.sfMostCompatible },
+    { value: 'vtt', label: 'VTT', sublabel: t.sfWebStandard },
+    { value: 'ass', label: 'ASS', sublabel: t.sfAdvancedStyling },
+    { value: 'lrc', label: 'LRC', sublabel: t.sfLyricsFormat },
+  ]
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [folderName, setFolderName] = useState('')
@@ -224,7 +226,7 @@ export function PlaylistPanel() {
                 {parsedPlaylist.title}
               </p>
               <p className="text-[11px] text-text-tertiary mt-1">
-                {parsedPlaylist.entryCount} videos
+                {t.entryCount(parsedPlaylist.entryCount)}
               </p>
             </div>
           </div>
@@ -255,7 +257,7 @@ export function PlaylistPanel() {
             `}>
               {allSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
             </div>
-            {allSelected ? 'Deselect all' : 'Select all'}
+            {allSelected ? t.deselectAll : t.selectAll}
             <span className="ml-auto text-text-placeholder">
               {selected.size} / {parsedPlaylist.entries.length}
             </span>
@@ -278,7 +280,7 @@ export function PlaylistPanel() {
         {/* Download options */}
         <div className="p-5 space-y-4">
           {/* Folder name */}
-          <Field label="Folder name">
+          <Field label={t.folderName}>
             <input
               type="text"
               value={folderName}
@@ -295,7 +297,7 @@ export function PlaylistPanel() {
           </Field>
 
           {/* Save to */}
-          <Field label="Save to">
+          <Field label={t.saveTo}>
             <button
               onClick={handleSelectFolder}
               className="
@@ -306,21 +308,21 @@ export function PlaylistPanel() {
               "
             >
               <Folder className="w-4 h-4 text-text-tertiary flex-shrink-0" />
-              <span className="truncate flex-1">{saveDir || 'Select folder...'}</span>
+              <span className="truncate flex-1">{saveDir || t.selectFolder}</span>
             </button>
           </Field>
 
           {/* Format row */}
           <div className={`grid gap-3 ${isAudioOnly ? 'grid-cols-2' : 'grid-cols-3'}`}>
-            <Field label="File type">
+            <Field label={t.fileType}>
               <Dropdown value={fileType} onChange={setFileType} options={FILE_TYPE_OPTIONS} />
             </Field>
             {!isAudioOnly && (
-              <Field label="Video quality">
+              <Field label={t.videoQuality}>
                 <Dropdown value={videoFormat} onChange={setVideoFormat} options={VIDEO_FORMAT_OPTIONS} />
               </Field>
             )}
-            <Field label="Audio quality">
+            <Field label={t.audioQuality}>
               <Dropdown value={audioFormat} onChange={setAudioFormat} options={AUDIO_FORMAT_OPTIONS} />
             </Field>
           </div>
@@ -329,7 +331,7 @@ export function PlaylistPanel() {
           <Field label={
             <span className="flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5" />
-              Subtitles
+              {t.subtitles}
               <span className="text-text-placeholder font-normal">
                 ({SUBTITLE_LANGUAGES.length})
               </span>
@@ -376,7 +378,7 @@ export function PlaylistPanel() {
 
           {/* Subtitle format — only when subtitles selected */}
           {selectedSubs.length > 0 && (
-            <Field label="Subtitle format">
+            <Field label={t.subtitleFormat}>
               <Dropdown
                 value={subtitleFormat}
                 onChange={setSubtitleFormat}
@@ -406,7 +408,7 @@ export function PlaylistPanel() {
             `}
           >
             <Download className="w-4 h-4" />
-            Download {selected.size} video{selected.size !== 1 ? 's' : ''}
+            {t.downloadN(selected.size)}
           </motion.button>
         </div>
       </div>

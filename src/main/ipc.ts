@@ -1,6 +1,7 @@
 import { ipcMain, dialog, shell, app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { spawn } from 'child_process'
 import { parseUrl, startDownload, cancelDownload, getCookiesDir } from './ytdlp'
 import type { DownloadOptions, DownloadTask, DownloadStatus, AppSettings, ParseResult } from '../shared/types'
 
@@ -153,6 +154,52 @@ export function registerIpcHandlers(): void {
     if (url.startsWith('https://')) {
       await shell.openExternal(url)
     }
+  })
+
+  ipcMain.handle('app:uninstall', async () => {
+    const userDataPath = app.getPath('userData')
+
+    // Delete our own data files (settings, history, cookies).
+    // Downloaded videos are NOT touched — they live in the user's chosen directory.
+    const ownFiles = ['settings.json', 'download-history.json']
+    for (const f of ownFiles) {
+      try { fs.unlinkSync(path.join(userDataPath, f)) } catch {}
+    }
+    try { fs.rmSync(path.join(userDataPath, 'cookies'), { recursive: true, force: true }) } catch {}
+
+    if (process.platform === 'win32') {
+      // Schedule full userData cleanup after the process exits (some Electron
+      // files are locked while the app is running).
+      const cleanupScript = [
+        '@echo off',
+        'timeout /t 4 /nobreak > nul',
+        `rmdir /s /q "${userDataPath}"`,
+        'del "%~f0"',
+      ].join('\r\n')
+      const scriptPath = path.join(app.getPath('temp'), 'yt-downloader-cleanup.bat')
+      fs.writeFileSync(scriptPath, cleanupScript)
+      spawn('cmd', ['/c', scriptPath], { detached: true, stdio: 'ignore' }).unref()
+
+      // Run the NSIS uninstaller silently
+      const uninstallerPath = path.join(
+        path.dirname(app.getPath('exe')),
+        'Uninstall YT Downloader.exe',
+      )
+      if (fs.existsSync(uninstallerPath)) {
+        spawn(uninstallerPath, ['/S'], { detached: true, stdio: 'ignore' }).unref()
+      }
+    } else if (process.platform === 'darwin') {
+      // Move the .app bundle to trash, then clean up userData
+      const appBundle = path.resolve(app.getPath('exe'), '../../..')
+      await shell.trashItem(appBundle)
+      try { fs.rmSync(userDataPath, { recursive: true, force: true }) } catch {}
+    } else {
+      // Linux AppImage: delete the AppImage file + userData
+      try { fs.unlinkSync(process.execPath) } catch {}
+      try { fs.rmSync(userDataPath, { recursive: true, force: true }) } catch {}
+    }
+
+    app.quit()
   })
 
   ipcMain.handle('app:get-cookies-dir', async () => {

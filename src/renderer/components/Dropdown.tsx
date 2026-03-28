@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Check } from 'lucide-react'
+import { useTranslation } from '../i18n'
 
 export interface DropdownOption {
   value: string
@@ -22,10 +23,12 @@ export function Dropdown({
   value,
   onChange,
   options,
-  placeholder = 'Select...',
+  placeholder,
   compact = false,
   maxHeight = 280,
 }: DropdownProps) {
+  const t = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t.selectPlaceholder
   const [isOpen, setIsOpen] = useState(false)
   const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({})
   const [openUpward, setOpenUpward] = useState(false)
@@ -195,7 +198,7 @@ export function Dropdown({
         `}
       >
         <span className={`truncate text-left ${!selected ? 'text-text-placeholder' : ''}`}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : resolvedPlaceholder}
         </span>
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}

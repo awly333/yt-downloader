@@ -6,6 +6,7 @@ import {
 import type { DownloadTask } from '../../shared/types'
 import { useDownloadStore } from '../stores/downloadStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useTranslation } from '../i18n'
 
 interface DownloadItemProps {
   task: DownloadTask
@@ -14,6 +15,7 @@ interface DownloadItemProps {
 export function DownloadItem({ task }: DownloadItemProps) {
   const { removeTask, removeTaskAndFile, retryTask, setPendingDelete } = useDownloadStore()
   const { settings } = useSettingsStore()
+  const t = useTranslation()
 
   const handleOpenFile = () => {
     if (task.filePath) window.electronAPI.openFile(task.filePath)
@@ -105,7 +107,7 @@ export function DownloadItem({ task }: DownloadItemProps) {
           <div className="flex items-center gap-1.5 mt-1">
             <StatusIcon status={task.status} />
             <span className="text-[10px] text-text-tertiary">
-              <StatusText task={task} />
+              <StatusText task={task} t={t} />
             </span>
           </div>
 
@@ -126,22 +128,22 @@ export function DownloadItem({ task }: DownloadItemProps) {
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {task.status === 'completed' && (
             <>
-              <ActionButton onClick={handleOpenFile} title="Open file">
+              <ActionButton onClick={handleOpenFile} title={t.openFile}>
                 <FileText className="w-3 h-3" />
               </ActionButton>
-              <ActionButton onClick={handleOpenFolder} title="Open folder">
+              <ActionButton onClick={handleOpenFolder} title={t.openFolder}>
                 <FolderOpen className="w-3 h-3" />
               </ActionButton>
             </>
           )}
           {task.status === 'failed' && (
-            <ActionButton onClick={handleRetry} title="Retry">
+            <ActionButton onClick={handleRetry} title={t.retry}>
               <RotateCcw className="w-3 h-3" />
             </ActionButton>
           )}
 
           {/* Delete/remove — always visible on hover */}
-          <ActionButton onClick={handleDelete} title="Remove" danger>
+          <ActionButton onClick={handleDelete} title={t.remove} danger>
             <X className="w-3 h-3" />
           </ActionButton>
         </div>
@@ -171,10 +173,10 @@ function StatusIcon({ status }: { status: DownloadTask['status'] }) {
   }
 }
 
-function StatusText({ task }: { task: DownloadTask }) {
+function StatusText({ task, t }: { task: DownloadTask; t: ReturnType<typeof useTranslation> }) {
   switch (task.status) {
     case 'queued':
-      return 'Queued'
+      return t.statusQueued
     case 'downloading':
       return (
         <>
@@ -184,11 +186,11 @@ function StatusText({ task }: { task: DownloadTask }) {
         </>
       )
     case 'merging':
-      return 'Merging streams...'
+      return t.statusMerging
     case 'completed':
-      return 'Completed'
+      return t.statusCompleted
     case 'failed':
-      return task.error || 'Failed'
+      return task.error || t.statusFailed
   }
 }
 

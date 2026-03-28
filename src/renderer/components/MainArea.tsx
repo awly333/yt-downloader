@@ -6,8 +6,10 @@ import { PlaylistPanel } from './PlaylistPanel'
 import { ArrowDown, Link2 } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useTranslation } from '../i18n'
+import type { Translations } from '../i18n'
 
-function ParseSkeleton() {
+function ParseSkeleton({ fetchingInfo }: { fetchingInfo: string }) {
   const pulse = 'bg-surface-sunken rounded-[--radius-md] animate-pulse'
   return (
     <motion.div
@@ -46,7 +48,7 @@ function ParseSkeleton() {
                 />
               ))}
             </div>
-            <span className="text-[12px] text-text-placeholder">Fetching video info…</span>
+            <span className="text-[12px] text-text-placeholder">{fetchingInfo}</span>
           </div>
         </div>
         {/* Footer */}
@@ -58,12 +60,12 @@ function ParseSkeleton() {
   )
 }
 
-function simplifyError(raw: string): string {
+function simplifyError(raw: string, t: Translations): string {
   if (raw.includes('Sign in to confirm') || raw.includes('not a bot')) {
-    return 'YouTube requires sign-in. Enable "Use browser cookies" and try again.'
+    return t.errorSignIn
   }
   if ((raw.includes('Could not copy') || raw.includes('DPAPI') || raw.includes('Failed to decrypt')) && raw.includes('cookie')) {
-    return 'Could not read browser cookies. Close the browser and try again.'
+    return t.errorCookies
   }
   const match = raw.match(/Error:\s*(.+)$/s)
   return match ? match[1].trim() : raw
@@ -72,6 +74,7 @@ function simplifyError(raw: string): string {
 export function MainArea() {
   const { parsedVideo, parsedPlaylist, isParsing, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError, useCookies } = useAppStore()
   const { settings } = useSettingsStore()
+  const t = useTranslation()
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
 
@@ -112,7 +115,7 @@ export function MainArea() {
         setParsedVideo(result.video)
       }
     } catch (err: any) {
-      setParseError(simplifyError(err.message || 'Failed to parse URL'))
+      setParseError(simplifyError(err.message || 'Failed to parse URL', t))
     }
   }
 
@@ -143,7 +146,7 @@ export function MainArea() {
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
                 <Link2 className="w-5 h-5 text-accent" strokeWidth={2} />
               </div>
-              <p className="text-[14px] font-medium text-accent">Drop URL to download</p>
+              <p className="text-[14px] font-medium text-accent">{t.dropUrl}</p>
             </div>
           </motion.div>
         )}
@@ -185,13 +188,13 @@ export function MainArea() {
               </div>
 
               <h2 className="text-[22px] font-semibold text-text-primary tracking-[-0.02em] mb-2">
-                Download a video
+                {t.emptyTitle}
               </h2>
               <p className="text-[14px] text-text-tertiary text-center leading-relaxed max-w-[360px]">
-                Paste a video link below to get started.
+                {t.emptySubtitle}
                 <br />
                 <span className="text-text-placeholder text-[13px]">
-                  Supports YouTube, Bilibili, Twitter, and 1000+ sites
+                  {t.emptySites}
                 </span>
               </p>
             </motion.div>
@@ -210,7 +213,7 @@ export function MainArea() {
 
         {/* Parse skeleton / Options Panel */}
         <AnimatePresence mode="wait">
-          {isParsing && !parsedVideo && !parsedPlaylist && <ParseSkeleton key="skeleton" />}
+          {isParsing && !parsedVideo && !parsedPlaylist && <ParseSkeleton key="skeleton" fetchingInfo={t.fetchingInfo} />}
           {parsedVideo && <OptionsPanel key="options" />}
           {parsedPlaylist && <PlaylistPanel key="playlist" />}
         </AnimatePresence>

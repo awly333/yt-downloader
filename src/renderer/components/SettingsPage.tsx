@@ -1,48 +1,12 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Folder, Trash2, Coffee, FolderOpen } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Folder, Trash2, Coffee, FolderOpen, TriangleAlert } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useDownloadStore } from '../stores/downloadStore'
+import { useTranslation } from '../i18n'
 
-const FILE_TYPE_OPTIONS = [
-  { value: 'mp4', label: 'MP4', sublabel: 'Video — Most compatible' },
-  { value: 'mkv', label: 'MKV', sublabel: 'Video — High quality container' },
-  { value: 'webm', label: 'WebM', sublabel: 'Video — Web optimized' },
-  { value: 'mp3', label: 'MP3', sublabel: 'Audio — Universal' },
-  { value: 'm4a', label: 'M4A', sublabel: 'Audio — Apple / AAC' },
-  { value: 'wav', label: 'WAV', sublabel: 'Audio — Lossless, large' },
-]
-const VIDEO_FORMAT_OPTIONS = [
-  { value: 'best', label: 'Best quality' },
-  { value: 'worst', label: 'Worst quality' },
-  { value: '2160p', label: '2160p (4K)' },
-  { value: '1440p', label: '1440p (2K)' },
-  { value: '1080p', label: '1080p (Full HD)' },
-  { value: '720p', label: '720p (HD)' },
-  { value: '480p', label: '480p' },
-  { value: '360p', label: '360p' },
-]
-const AUDIO_FORMAT_OPTIONS = [
-  { value: 'best', label: 'Best quality' },
-  { value: 'worst', label: 'Worst quality' },
-]
-const SUBTITLE_FORMAT_OPTIONS = [
-  { value: 'original', label: 'Original', sublabel: 'Keep as downloaded' },
-  { value: 'srt', label: 'SRT', sublabel: 'Most compatible' },
-  { value: 'vtt', label: 'VTT', sublabel: 'Web standard' },
-  { value: 'ass', label: 'ASS', sublabel: 'Advanced styling' },
-  { value: 'lrc', label: 'LRC', sublabel: 'Lyrics format' },
-]
-const BANDWIDTH_OPTIONS = [
-  { value: 'unlimited', label: 'Unlimited', sublabel: 'No speed limit' },
-  { value: '512k', label: '512 KB/s' },
-  { value: '1m', label: '1 MB/s' },
-  { value: '2m', label: '2 MB/s' },
-  { value: '5m', label: '5 MB/s' },
-  { value: '10m', label: '10 MB/s' },
-]
 const BROWSER_OPTIONS = [
   { value: 'chrome', label: 'Chrome' },
   { value: 'edge', label: 'Edge' },
@@ -64,7 +28,48 @@ export function SettingsPage() {
   const { setView } = useAppStore()
   const { settings, updateSettings } = useSettingsStore()
   const { clearCompleted } = useDownloadStore()
+  const t = useTranslation()
   const [cookiesDir, setCookiesDir] = useState('')
+  const [uninstallConfirm, setUninstallConfirm] = useState(false)
+  const [uninstalling, setUninstalling] = useState(false)
+
+  const FILE_TYPE_OPTIONS = [
+    { value: 'mp4', label: 'MP4', sublabel: t.ftVideoCompatible },
+    { value: 'mkv', label: 'MKV', sublabel: t.ftVideoHighQuality },
+    { value: 'webm', label: 'WebM', sublabel: t.ftVideoWebOptimized },
+    { value: 'mp3', label: 'MP3', sublabel: t.ftAudioUniversal },
+    { value: 'm4a', label: 'M4A', sublabel: t.ftAudioAac },
+    { value: 'wav', label: 'WAV', sublabel: t.ftAudioLosslessLarge },
+  ]
+  const VIDEO_FORMAT_OPTIONS = [
+    { value: 'best', label: t.bestQuality },
+    { value: 'worst', label: t.worstQuality },
+    { value: '2160p', label: '2160p (4K)' },
+    { value: '1440p', label: '1440p (2K)' },
+    { value: '1080p', label: '1080p (Full HD)' },
+    { value: '720p', label: '720p (HD)' },
+    { value: '480p', label: '480p' },
+    { value: '360p', label: '360p' },
+  ]
+  const AUDIO_FORMAT_OPTIONS = [
+    { value: 'best', label: t.bestQuality },
+    { value: 'worst', label: t.worstQuality },
+  ]
+  const SUBTITLE_FORMAT_OPTIONS = [
+    { value: 'original', label: 'Original', sublabel: t.sfKeepAsDownloaded },
+    { value: 'srt', label: 'SRT', sublabel: t.sfMostCompatible },
+    { value: 'vtt', label: 'VTT', sublabel: t.sfWebStandard },
+    { value: 'ass', label: 'ASS', sublabel: t.sfAdvancedStyling },
+    { value: 'lrc', label: 'LRC', sublabel: t.sfLyricsFormat },
+  ]
+  const BANDWIDTH_OPTIONS = [
+    { value: 'unlimited', label: 'Unlimited', sublabel: t.bwNoLimit },
+    { value: '512k', label: '512 KB/s' },
+    { value: '1m', label: '1 MB/s' },
+    { value: '2m', label: '2 MB/s' },
+    { value: '5m', label: '5 MB/s' },
+    { value: '10m', label: '10 MB/s' },
+  ]
 
   useEffect(() => {
     window.electronAPI.getCookiesDir().then(setCookiesDir)
@@ -77,6 +82,11 @@ export function SettingsPage() {
 
   const handleOpenCookiesDir = () => {
     if (cookiesDir) window.electronAPI.openFile(cookiesDir)
+  }
+
+  const handleUninstall = async () => {
+    setUninstalling(true)
+    await window.electronAPI.uninstallApp()
   }
 
   return (
@@ -102,13 +112,13 @@ export function SettingsPage() {
             <ArrowLeft className="w-5 h-5 text-text-secondary" />
           </button>
           <h1 className="text-[20px] font-semibold text-text-primary tracking-[-0.02em]">
-            Settings
+            {t.settingsTitle}
           </h1>
         </div>
 
         <div className="space-y-6">
           {/* Download directory */}
-          <SettingRow label="Default download directory">
+          <SettingRow label={t.settingDownloadDir}>
             <button
               onClick={handleSelectFolder}
               className="
@@ -125,7 +135,7 @@ export function SettingsPage() {
           </SettingRow>
 
           {/* Default file type */}
-          <SettingRow label="Default file type">
+          <SettingRow label={t.settingDefaultFileType}>
             <Dropdown
               value={settings.defaultFileType}
               onChange={(v) => updateSettings({ defaultFileType: v })}
@@ -134,7 +144,7 @@ export function SettingsPage() {
           </SettingRow>
 
           {/* Default video format */}
-          <SettingRow label="Default video quality">
+          <SettingRow label={t.settingDefaultVideoQuality}>
             <Dropdown
               value={settings.defaultVideoFormat}
               onChange={(v) => updateSettings({ defaultVideoFormat: v })}
@@ -143,7 +153,7 @@ export function SettingsPage() {
           </SettingRow>
 
           {/* Default audio format */}
-          <SettingRow label="Default audio quality">
+          <SettingRow label={t.settingDefaultAudioQuality}>
             <Dropdown
               value={settings.defaultAudioFormat}
               onChange={(v) => updateSettings({ defaultAudioFormat: v })}
@@ -152,7 +162,7 @@ export function SettingsPage() {
           </SettingRow>
 
           {/* Default subtitle format */}
-          <SettingRow label="Default subtitle format">
+          <SettingRow label={t.settingDefaultSubtitleFormat}>
             <Dropdown
               value={settings.defaultSubtitleFormat || 'original'}
               onChange={(v) => updateSettings({ defaultSubtitleFormat: v })}
@@ -162,8 +172,8 @@ export function SettingsPage() {
 
           {/* Bandwidth limit */}
           <SettingRow
-            label="Download speed limit"
-            hint="Limit maximum download speed per task"
+            label={t.settingSpeedLimit}
+            hint={t.settingSpeedLimitHint}
           >
             <Dropdown
               value={settings.bandwidthLimit || 'unlimited'}
@@ -174,8 +184,8 @@ export function SettingsPage() {
 
           {/* Cookie browser */}
           <SettingRow
-            label="Cookie browser"
-            hint="Browser to extract cookies from for member-only videos"
+            label={t.settingCookieBrowser}
+            hint={t.settingCookieBrowserHint}
           >
             <Dropdown
               value={settings.cookieBrowser}
@@ -199,7 +209,7 @@ export function SettingsPage() {
           </SettingRow>
 
           {/* Language */}
-          <SettingRow label="Language">
+          <SettingRow label={t.settingLanguage}>
             <Dropdown
               value={settings.language}
               onChange={(v) => updateSettings({ language: v })}
@@ -211,7 +221,7 @@ export function SettingsPage() {
           <div className="border-t border-border" />
 
           {/* Clear history */}
-          <SettingRow label="Download history" hint="Remove completed downloads from the sidebar">
+          <SettingRow label={t.settingHistory} hint={t.settingHistoryHint}>
             <button
               onClick={clearCompleted}
               className="
@@ -224,9 +234,98 @@ export function SettingsPage() {
               "
             >
               <Trash2 className="w-4 h-4" />
-              Clear completed
+              {t.clearCompleted}
             </button>
           </SettingRow>
+
+          {/* Divider */}
+          <div className="border-t border-border" />
+
+          {/* Uninstall */}
+          <div>
+            <label className="block text-[13px] font-medium text-text-primary mb-1.5">
+              {t.settingUninstall}
+            </label>
+            <p className="text-[11px] text-text-placeholder mb-3">
+              {t.settingUninstallDesc}
+            </p>
+
+            <AnimatePresence mode="wait" initial={false}>
+              {!uninstallConfirm ? (
+                <motion.button
+                  key="trigger"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={() => setUninstallConfirm(true)}
+                  className="
+                    flex items-center gap-2 px-4 py-2.5 rounded-[--radius-md]
+                    border border-border
+                    text-[13px] text-text-secondary font-medium
+                    hover:bg-error-soft hover:border-error/20 hover:text-error
+                    transition-all duration-150 cursor-pointer
+                  "
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {t.uninstallButton}
+                </motion.button>
+              ) : (
+                <motion.div
+                  key="confirm"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  className="rounded-[--radius-lg] border border-error/20 bg-error-soft p-4"
+                >
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-7 h-7 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <TriangleAlert className="w-3.5 h-3.5 text-error" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-text-primary mb-1">
+                        {t.uninstallConfirmTitle}
+                      </p>
+                      <p className="text-[12px] text-text-secondary leading-relaxed">
+                        {t.uninstallConfirmDesc}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      onClick={() => setUninstallConfirm(false)}
+                      disabled={uninstalling}
+                      className="
+                        px-3.5 py-2 rounded-[--radius-md]
+                        text-[12px] font-medium text-text-secondary
+                        hover:bg-surface-hover
+                        transition-colors duration-150 cursor-pointer
+                        disabled:opacity-40
+                      "
+                    >
+                      {t.cancel}
+                    </button>
+                    <button
+                      onClick={handleUninstall}
+                      disabled={uninstalling}
+                      className="
+                        flex items-center gap-1.5 px-3.5 py-2 rounded-[--radius-md]
+                        bg-error text-white
+                        text-[12px] font-medium
+                        hover:opacity-90
+                        transition-opacity duration-150 cursor-pointer
+                        disabled:opacity-60
+                      "
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {uninstalling ? t.uninstalling : t.confirmUninstall}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Divider */}
           <div className="border-t border-border" />
@@ -243,10 +342,10 @@ export function SettingsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-[13px] font-semibold text-text-primary mb-1">
-                  Support development
+                  {t.supportTitle}
                 </h3>
                 <p className="text-[12px] text-text-secondary leading-relaxed mb-3">
-                  If you find YT Downloader useful, consider buying me a coffee. It helps me keep building!
+                  {t.supportDesc}
                 </p>
                 <button
                   onClick={() => window.electronAPI.openExternal('https://buymeacoffee.com/georgettt')}
@@ -260,7 +359,7 @@ export function SettingsPage() {
                   "
                 >
                   <Coffee className="w-3.5 h-3.5" />
-                  Buy me a coffee
+                  {t.buyMeCoffee}
                 </button>
               </div>
             </div>

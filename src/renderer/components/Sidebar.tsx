@@ -4,11 +4,13 @@ import { DownloadList } from './DownloadList'
 import { useAppStore } from '../stores/appStore'
 import { useDownloadStore } from '../stores/downloadStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useTranslation } from '../i18n'
 
 export function Sidebar() {
   const { setView, view, setShowAbout } = useAppStore()
   const { tasks, setPendingDelete, clearCompleted, clearCompletedAndFiles, cancelAndRemoveAllActive } = useDownloadStore()
   const { settings } = useSettingsStore()
+  const t = useTranslation()
 
   const hasCompleted = tasks.some((t) => t.status === 'completed')
   const hasActive = tasks.some((t) => ['downloading', 'queued', 'merging'].includes(t.status))
@@ -64,7 +66,7 @@ export function Sidebar() {
             YT Downloader
           </h1>
           <p className="text-[11px] text-text-tertiary leading-tight mt-0.5">
-            Video downloader
+            {t.appSubtitle}
           </p>
         </div>
       </div>
@@ -73,13 +75,13 @@ export function Sidebar() {
       <div className="px-5 pt-4 pb-2 flex items-center gap-2">
         <Download className="w-3.5 h-3.5 text-text-tertiary" />
         <span className="text-[11px] font-medium text-text-tertiary uppercase tracking-widest flex-1">
-          Downloads
+          {t.downloads}
         </span>
         {/* Clear all button */}
         {hasTasks && (
           <button
             onClick={handleClearAll}
-            title="Clear all"
+            title={t.clearAll}
             className="
               p-1 rounded-[--radius-sm]
               text-text-placeholder
@@ -115,11 +117,11 @@ export function Sidebar() {
           `}
         >
           <Settings className="w-4 h-4" />
-          Settings
+          {t.settings}
         </button>
         <button
           onClick={() => setShowAbout(true)}
-          title="About"
+          title={t.settings}
           className="
             p-2.5 rounded-[--radius-md]
             text-text-tertiary

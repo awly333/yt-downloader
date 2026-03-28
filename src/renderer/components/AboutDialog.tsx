@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ArrowDown, GitBranch, ExternalLink, Heart } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
+import { useTranslation } from '../i18n'
 
 export function AboutDialog() {
   const { showAbout, setShowAbout } = useAppStore()
+  const t = useTranslation()
   const [version, setVersion] = useState<string>('')
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -90,14 +92,14 @@ export function AboutDialog() {
               </h2>
               {version && (
                 <p className="text-[12px] text-text-placeholder mt-0.5 mb-4">
-                  Version {version}
+                  {t.version} {version}
                 </p>
               )}
 
               <p className="text-[12px] text-text-secondary leading-relaxed mb-5">
-                A beautiful video downloader powered by yt-dlp.
-                <br />
-                Supports YouTube, Bilibili, Twitter, and 1000+ sites.
+                {t.aboutDesc.split('\n').map((line, i) => (
+                  <span key={i}>{line}{i === 0 && <br />}</span>
+                ))}
               </p>
 
               {/* Links */}
@@ -115,7 +117,7 @@ export function AboutDialog() {
                   "
                 >
                   <GitBranch className="w-3.5 h-3.5" />
-                  View on GitHub
+                  {t.viewOnGitHub}
                   <ExternalLink className="w-3 h-3 text-text-placeholder" />
                 </button>
 
@@ -132,13 +134,13 @@ export function AboutDialog() {
                   "
                 >
                   <Heart className="w-3.5 h-3.5" />
-                  Support development
+                  {t.supportDevelopment}
                 </button>
               </div>
 
               {/* Credits */}
               <p className="text-[11px] text-text-placeholder mt-5">
-                Powered by{' '}
+                {t.poweredBy}{' '}
                 <button
                   onClick={() => window.electronAPI.openExternal('https://github.com/yt-dlp/yt-dlp')}
                   className="text-text-tertiary hover:text-text-secondary underline cursor-pointer transition-colors"
