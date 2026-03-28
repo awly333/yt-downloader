@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link2, ArrowRight, Loader2, Check } from 'lucide-react'
+import { Link2, ArrowRight, Loader2, Check, FolderOpen } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -10,6 +10,7 @@ const BROWSER_OPTIONS = [
   { value: 'edge', label: 'Edge' },
   { value: 'firefox', label: 'Firefox' },
   { value: 'brave', label: 'Brave' },
+  { value: 'local', label: 'Local' },
 ]
 
 function simplifyError(raw: string): string {
@@ -27,8 +28,13 @@ function simplifyError(raw: string): string {
 export function URLInput() {
   const [url, setUrl] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+  const [cookiesDir, setCookiesDir] = useState('')
   const { isParsing, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError, parseError, useCookies, setUseCookies } = useAppStore()
   const { settings, updateSettings } = useSettingsStore()
+
+  useEffect(() => {
+    window.electronAPI.getCookiesDir().then(setCookiesDir)
+  }, [])
 
   const hasUrl = url.trim().length > 0
 
@@ -174,6 +180,28 @@ export function URLInput() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Cookies folder path — shown when Local is selected */}
+      <AnimatePresence>
+        {useCookies && settings.cookieBrowser === 'local' && cookiesDir && (
+          <motion.button
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => window.electronAPI.openFile(cookiesDir)}
+            className="
+              mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-[--radius-md]
+              bg-surface-sunken border border-border
+              text-left cursor-pointer
+              hover:bg-surface-hover transition-colors duration-150
+            "
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-text-tertiary flex-shrink-0" />
+            <span className="text-[11px] text-text-secondary truncate flex-1">{cookiesDir}</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Error message */}
       {parseError && (

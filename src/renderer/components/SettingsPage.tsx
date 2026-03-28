@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Folder, Trash2, Coffee } from 'lucide-react'
+import { ArrowLeft, Folder, Trash2, Coffee, FolderOpen } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import { useAppStore } from '../stores/appStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -47,6 +48,7 @@ const BROWSER_OPTIONS = [
   { value: 'edge', label: 'Edge' },
   { value: 'firefox', label: 'Firefox' },
   { value: 'brave', label: 'Brave' },
+  { value: 'local', label: 'Local' },
 ]
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -62,10 +64,19 @@ export function SettingsPage() {
   const { setView } = useAppStore()
   const { settings, updateSettings } = useSettingsStore()
   const { clearCompleted } = useDownloadStore()
+  const [cookiesDir, setCookiesDir] = useState('')
+
+  useEffect(() => {
+    window.electronAPI.getCookiesDir().then(setCookiesDir)
+  }, [])
 
   const handleSelectFolder = async () => {
     const selected = await window.electronAPI.selectFolder(settings.downloadDir)
     if (selected) updateSettings({ downloadDir: selected })
+  }
+
+  const handleOpenCookiesDir = () => {
+    if (cookiesDir) window.electronAPI.openFile(cookiesDir)
   }
 
   return (
@@ -171,6 +182,20 @@ export function SettingsPage() {
               onChange={(v) => updateSettings({ cookieBrowser: v })}
               options={BROWSER_OPTIONS}
             />
+            {settings.cookieBrowser === 'local' && cookiesDir && (
+              <button
+                onClick={handleOpenCookiesDir}
+                className="
+                  mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-[--radius-md]
+                  bg-surface-sunken border border-border
+                  text-[12px] text-text-secondary text-left
+                  hover:bg-surface-hover transition-colors duration-150 cursor-pointer
+                "
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-text-tertiary flex-shrink-0" />
+                <span className="truncate flex-1">{cookiesDir}</span>
+              </button>
+            )}
           </SettingRow>
 
           {/* Language */}
