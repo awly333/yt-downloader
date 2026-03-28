@@ -35,8 +35,6 @@ win:
   target:
     - target: nsis
       arch: [x64]
-    - target: zip
-      arch: [x64]
   artifactName: YT-Downloader-Setup-${version}.${ext}
 
 nsis:
@@ -87,8 +85,6 @@ linux:
   category: Network
   target:
     - target: AppImage
-      arch: [x64]
-    - target: deb
       arch: [x64]
   artifactName: YT-Downloader-${version}-linux-${arch}.${ext}
 
