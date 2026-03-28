@@ -143,6 +143,7 @@ export interface IpcApi {
   getDownloadsDir: () => Promise<string>
   getAppVersion: () => Promise<string>
   openExternal: (url: string) => Promise<void>
+  getCookiesDir: () => Promise<string>
   onDownloadProgress: (callback: (progress: DownloadProgress) => void) => () => void
   // History persistence
   loadHistory: () => Promise<DownloadTask[]>

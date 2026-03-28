@@ -20,6 +20,33 @@ function getBinPath(name: string): string {
   return path.join(getResourcesDir(), 'bin', `${name}${ext}`)
 }
 
+// ── Local cookie file resolution ──────────────────────────────
+
+export function getCookiesDir(): string {
+  return path.join(app.getPath('userData'), 'cookies')
+}
+
+/**
+ * Returns the path to the most recently modified .txt file in the cookies dir,
+ * or null if the directory is empty or doesn't exist.
+ */
+function getMostRecentCookieFile(): string | null {
+  const dir = getCookiesDir()
+  try {
+    if (!fs.existsSync(dir)) return null
+    const files = fs.readdirSync(dir)
+      .filter((f) => f.toLowerCase().endsWith('.txt'))
+      .map((f) => {
+        const full = path.join(dir, f)
+        return { full, mtime: fs.statSync(full).mtimeMs }
+      })
+      .sort((a, b) => b.mtime - a.mtime)
+    return files.length > 0 ? files[0].full : null
+  } catch {
+    return null
+  }
+}
+
 /** Ensure bundled binaries are executable on macOS/Linux (safe no-op on Windows). */
 export function ensureBinariesExecutable(): void {
   if (process.platform === 'win32') return
@@ -49,7 +76,12 @@ export async function parseUrl(url: string, cookieBrowser?: string): Promise<Par
       '--no-warnings',
       '--ffmpeg-location', path.dirname(ffmpegBin),
     ]
-    if (cookieBrowser) args.push('--cookies-from-browser', cookieBrowser)
+    if (cookieBrowser === 'local') {
+      const cookieFile = getMostRecentCookieFile()
+      if (cookieFile) args.push('--cookies', cookieFile)
+    } else if (cookieBrowser) {
+      args.push('--cookies-from-browser', cookieBrowser)
+    }
     args.push(url)
 
     const proc = spawn(ytdlpBin, args, {
@@ -543,7 +575,12 @@ function buildYtdlpArgs(options: DownloadOptions, ffmpegBin: string): string[] {
 
   // Cookies
   if (options.useCookies) {
-    args.push('--cookies-from-browser', options.cookieBrowser)
+    if (options.cookieBrowser === 'local') {
+      const cookieFile = getMostRecentCookieFile()
+      if (cookieFile) args.push('--cookies', cookieFile)
+    } else {
+      args.push('--cookies-from-browser', options.cookieBrowser)
+    }
   }
 
   // Subtitles — use both flags so manual and auto-generated subs both work

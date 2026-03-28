@@ -1,7 +1,7 @@
 import { ipcMain, dialog, shell, app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { parseUrl, startDownload, cancelDownload } from './ytdlp'
+import { parseUrl, startDownload, cancelDownload, getCookiesDir } from './ytdlp'
 import type { DownloadOptions, DownloadTask, DownloadStatus, AppSettings, ParseResult } from '../shared/types'
 
 function getSettingsPath() {
@@ -151,6 +151,13 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('shell:open-external', async (_event, url: string) => {
     await shell.openExternal(url)
+  })
+
+  ipcMain.handle('app:get-cookies-dir', async () => {
+    const dir = getCookiesDir()
+    // Ensure the directory exists so users can find and populate it
+    await fs.promises.mkdir(dir, { recursive: true })
+    return dir
   })
 
   // ── Download history persistence ──────────────────────────────
