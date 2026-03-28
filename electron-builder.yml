@@ -84,10 +84,16 @@ dmg:
 linux:
   icon: build/icon.png
   category: Network
+  description: "A beautiful video downloader powered by yt-dlp"
   target:
     - target: AppImage
       arch: [x64]
   artifactName: YT-Downloader-${version}-linux-${arch}.${ext}
+  desktop:
+    Name: YT Downloader
+    Comment: Download videos from YouTube and 1000+ sites
+    Categories: Network;VideoEditing;
+    StartupWMClass: yt-downloader
 
 # ─── Auto-updater — publish to GitHub Releases ───────────────────────────────
 publish:
