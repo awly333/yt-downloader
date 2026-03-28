@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFolder: (filePath: string) => ipcRenderer.invoke('shell:open-folder', filePath),
   deleteFile: (filePath: string) => ipcRenderer.invoke('shell:delete-file', filePath) as Promise<boolean>,
   deleteDownloadFiles: (saveDir: string, fileName: string) => ipcRenderer.invoke('shell:delete-download-files', saveDir, fileName) as Promise<boolean>,
+  deleteEmptyDir: (dirPath: string) => ipcRenderer.invoke('shell:delete-empty-dir', dirPath) as Promise<boolean>,
 
   // Settings
   getSettings: () => ipcRenderer.invoke('store:get-settings'),

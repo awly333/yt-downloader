@@ -135,13 +135,24 @@ export async function parseUrl(url: string, cookieBrowser?: string): Promise<Par
 }
 
 function transformPlaylistInfo(raw: any, originalUrl: string): PlaylistInfo {
-  const entries = (raw.entries || []).map((e: any) => ({
-    id: e.id || e.url || '',
-    title: e.title || 'Untitled',
-    url: e.url || e.webpage_url || '',
-    duration: e.duration || 0,
-    uploader: e.uploader || e.channel || raw.uploader || raw.channel || '',
-  }))
+  const entries = (raw.entries || []).map((e: any) => {
+    let entryThumbnail = e.thumbnail || ''
+    if (!entryThumbnail && Array.isArray(e.thumbnails) && e.thumbnails.length > 0) {
+      const sorted = [...e.thumbnails].sort((a: any, b: any) => (b.width || 0) - (a.width || 0))
+      entryThumbnail = sorted[0]?.url || ''
+    }
+    if (!entryThumbnail && e.id) {
+      entryThumbnail = `https://i.ytimg.com/vi/${e.id}/hqdefault.jpg`
+    }
+    return {
+      id: e.id || e.url || '',
+      title: e.title || 'Untitled',
+      url: e.url || e.webpage_url || '',
+      duration: e.duration || 0,
+      uploader: e.uploader || e.channel || raw.uploader || raw.channel || '',
+      thumbnail: entryThumbnail,
+    }
+  })
 
   // yt-dlp rarely provides a playlist-level thumbnail with --flat-playlist.
   // Priority: raw.thumbnail → raw.thumbnails[] → first entry's thumbnail → YouTube hqdefault
@@ -430,69 +441,83 @@ export function startDownload(
 ): void {
   const ytdlpBin = getBinPath('yt-dlp')
   const ffmpegBin = getBinPath('ffmpeg')
-  const args = buildYtdlpArgs(options, ffmpegBin)
-  if (bandwidthLimit) args.push('--limit-rate', bandwidthLimit)
-  console.log('[yt-dlp] spawning:', ytdlpBin, args.join(' '))
 
-  const proc = spawn(ytdlpBin, args, { windowsHide: true })
-  activeDownloads.set(taskId, { proc, options })
+  function runAttempt(noSubs: boolean): void {
+    const effectiveOptions = noSubs ? { ...options, subtitleLangs: [] } : options
+    const args = buildYtdlpArgs(effectiveOptions, ffmpegBin)
+    if (bandwidthLimit) args.push('--limit-rate', bandwidthLimit)
+    console.log('[yt-dlp] spawning%s:', noSubs ? ' (no-subs retry)' : '', ytdlpBin, args.join(' '))
 
-  let stderrBuf = ''
+    const proc = spawn(ytdlpBin, args, { windowsHide: true })
+    activeDownloads.set(taskId, { proc, options })
 
-  proc.stdout.on('data', (data: Buffer) => {
-    const lines = data.toString().split('\n')
-    for (const line of lines) {
-      const progress = parseProgressLine(taskId, line)
-      if (progress) {
-        onProgress(progress)
+    let stderrBuf = ''
+
+    proc.stdout.on('data', (data: Buffer) => {
+      const lines = data.toString().split('\n')
+      for (const line of lines) {
+        const progress = parseProgressLine(taskId, line)
+        if (progress) {
+          onProgress(progress)
+        }
       }
-    }
-  })
+    })
 
-  proc.stderr.on('data', (data: Buffer) => {
-    const text = data.toString()
-    stderrBuf += text
-    if (text.trim()) {
-      console.error(`[yt-dlp stderr] ${text.trim()}`)
-    }
-  })
+    proc.stderr.on('data', (data: Buffer) => {
+      const text = data.toString()
+      stderrBuf += text
+      if (text.trim()) {
+        console.error(`[yt-dlp stderr] ${text.trim()}`)
+      }
+    })
 
-  proc.on('close', (code) => {
-    activeDownloads.delete(taskId)
-    if (code === 0) {
-      onProgress({
-        taskId,
-        percent: 100,
-        speed: '',
-        eta: '',
-        status: 'completed',
-      })
-    } else {
-      const errMsg = stderrBuf.trim()
-      // Extract the last meaningful error line from stderr
-      const lastLine = errMsg.split('\n').filter(l => l.trim()).pop() || ''
+    proc.on('close', (code) => {
+      // If cancelDownload already removed this taskId, the process was killed by the user.
+      // Do not retry and do not report failure — the task is already gone from the UI.
+      const wasCancelled = !activeDownloads.has(taskId)
+      activeDownloads.delete(taskId)
+      if (wasCancelled) return
+
+      if (code === 0) {
+        onProgress({
+          taskId,
+          percent: 100,
+          speed: '',
+          eta: '',
+          status: 'completed',
+        })
+      } else if (!noSubs && options.subtitleLangs.length > 0) {
+        // Subtitle request may have caused the failure — retry without subtitles
+        console.log(`[yt-dlp] download failed (code ${code}), retrying without subtitles`)
+        runAttempt(true)
+      } else {
+        const errMsg = stderrBuf.trim()
+        const lastLine = errMsg.split('\n').filter(l => l.trim()).pop() || ''
+        onProgress({
+          taskId,
+          percent: 0,
+          speed: '',
+          eta: '',
+          status: 'failed',
+          error: lastLine || `yt-dlp exited with code ${code}`,
+        })
+      }
+    })
+
+    proc.on('error', (err) => {
+      activeDownloads.delete(taskId)
       onProgress({
         taskId,
         percent: 0,
         speed: '',
         eta: '',
         status: 'failed',
-        error: lastLine || `yt-dlp exited with code ${code}`,
+        error: err.message,
       })
-    }
-  })
-
-  proc.on('error', (err) => {
-    activeDownloads.delete(taskId)
-    onProgress({
-      taskId,
-      percent: 0,
-      speed: '',
-      eta: '',
-      status: 'failed',
-      error: err.message,
     })
-  })
+  }
+
+  runAttempt(false)
 }
 
 export function cancelDownload(taskId: string): void {

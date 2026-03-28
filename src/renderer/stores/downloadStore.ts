@@ -84,11 +84,16 @@ export const useDownloadStore = create<DownloadStore>((set, get) => ({
   },
 
   removeTask: (taskId) => {
+    const task = get().tasks.find((t) => t.id === taskId)
     set((state) => {
       const next = state.tasks.filter((t) => t.id !== taskId)
       debouncedSave(next)
       return { tasks: next }
     })
+    // Best-effort: remove the playlist subfolder if it is now empty
+    if (task?.options.saveDir) {
+      window.electronAPI.deleteEmptyDir(task.options.saveDir)
+    }
   },
 
   removeTaskAndFile: async (taskId) => {

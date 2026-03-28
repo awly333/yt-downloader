@@ -134,6 +134,18 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle('shell:delete-empty-dir', async (_event, dirPath: string) => {
+    try {
+      const files = await fs.promises.readdir(dirPath)
+      if (files.length === 0) {
+        await fs.promises.rmdir(dirPath)
+      }
+      return true
+    } catch {
+      return false
+    }
+  })
+
   ipcMain.handle('store:get-settings', async () => {
     return readSettings()
   })

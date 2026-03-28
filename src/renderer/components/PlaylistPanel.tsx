@@ -74,17 +74,16 @@ export function PlaylistPanel() {
   const [selectedSubs, setSelectedSubs] = useState<string[]>([])
   const [subtitleFormat, setSubtitleFormat] = useState('original')
   const subtitleContainerRef = useRef<HTMLDivElement>(null)
-  const autoSelectedPlaylistRef = useRef<string | null>(null)
+  const initializedPlaylistRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (parsedPlaylist) {
-      setSelected(new Set(parsedPlaylist.entries.map((e) => e.id)))
-      setFolderName(sanitizeFileName(parsedPlaylist.title))
-      // Auto-select subtitle language only when a new playlist is parsed
-      if (autoSelectedPlaylistRef.current !== parsedPlaylist.url) {
-        autoSelectedPlaylistRef.current = parsedPlaylist.url
-        const defaultLang = pickDefaultSubLang(settings.language)
-        setSelectedSubs(defaultLang ? [defaultLang] : [])
+      const isNewPlaylist = initializedPlaylistRef.current !== parsedPlaylist.url
+      if (isNewPlaylist) {
+        initializedPlaylistRef.current = parsedPlaylist.url
+        setSelected(new Set(parsedPlaylist.entries.map((e) => e.id)))
+        setFolderName(sanitizeFileName(parsedPlaylist.title))
+        setSelectedSubs([])
       }
     }
     setSaveDir(settings.downloadDir)
@@ -161,7 +160,7 @@ export function PlaylistPanel() {
         const task: DownloadTask = {
           id: taskId,
           options,
-          thumbnail: '',
+          thumbnail: entry.thumbnail,
           status: 'downloading',
           progress: 0,
           speed: '',
@@ -478,20 +477,6 @@ function PlaylistEntryRow({
 }
 
 // ── Helpers ──────────────────────────────────────────────────
-
-// Map app language setting → best matching code in SUBTITLE_LANGUAGES
-function pickDefaultSubLang(appLang: string): string | null {
-  const map: Record<string, string> = {
-    en: 'en',
-    zh: 'zh-Hans',
-    ja: 'ja',
-    ko: 'ko',
-    es: 'es',
-    fr: 'fr',
-    de: 'de',
-  }
-  return map[appLang] ?? 'en'
-}
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[<>:"/\\|?*]/g, '_').trim()

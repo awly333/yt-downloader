@@ -55,6 +55,7 @@ export interface PlaylistEntry {
   url: string
   duration: number
   uploader: string
+  thumbnail: string
 }
 
 export interface PlaylistInfo {
@@ -138,6 +139,7 @@ export interface IpcApi {
   openFolder: (filePath: string) => Promise<void>
   deleteFile: (filePath: string) => Promise<boolean>
   deleteDownloadFiles: (saveDir: string, fileName: string) => Promise<boolean>
+  deleteEmptyDir: (dirPath: string) => Promise<boolean>
   getSettings: () => Promise<AppSettings>
   setSettings: (settings: Partial<AppSettings>) => Promise<void>
   getDownloadsDir: () => Promise<string>
