@@ -55,7 +55,7 @@ Some videos require you to be logged in to download (age-restricted content, mem
 
 ### How to export a cookie file
 
-1. Install the **[Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)** extension in Chrome or Edge (there is also a [Firefox version](https://addons.mozilla.org/firefox/addon/cookies-txt/)).
+1. Install the **[Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)** extension in Chrome or Edge.
 2. Log in to YouTube (or whichever site you want to download from).
 3. Navigate to the site, click the extension icon, and click **Export** — this downloads a `.txt` file in Netscape cookie format.
 
