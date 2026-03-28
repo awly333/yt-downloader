@@ -52,7 +52,7 @@ nsis:
 
 # ─── macOS ───────────────────────────────────────────────────────────────────
 mac:
-  icon: build/icon.icns
+  icon: build/icon.png
   category: public.app-category.utilities
   target:
     - target: dmg
@@ -67,7 +67,7 @@ mac:
 
 dmg:
   title: YT Downloader ${version}
-  icon: build/icon.icns
+  icon: build/icon.png
   iconSize: 80
   window:
     width: 540

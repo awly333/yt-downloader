@@ -150,7 +150,9 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('shell:open-external', async (_event, url: string) => {
-    await shell.openExternal(url)
+    if (url.startsWith('https://')) {
+      await shell.openExternal(url)
+    }
   })
 
   ipcMain.handle('app:get-cookies-dir', async () => {
