@@ -15,12 +15,15 @@ const BROWSER_OPTIONS = [
   { value: 'local', label: 'Local' },
 ]
 
-function simplifyError(raw: string, t: Translations): string {
+function simplifyError(raw: string, t: Translations, url = ''): string {
   if (raw.includes('Sign in to confirm') || raw.includes('not a bot')) {
     return t.errorSignIn
   }
   if ((raw.includes('Could not copy') || raw.includes('DPAPI') || raw.includes('Failed to decrypt')) && raw.includes('cookie')) {
     return t.errorCookies
+  }
+  if ((raw.includes('412') || raw.includes('Precondition Failed')) && url.includes('bilibili')) {
+    return t.errorBilibili412
   }
   // Strip "Error invoking remote method '...': Error:" prefix if present
   const match = raw.match(/Error:\s*(.+)$/s)
@@ -57,7 +60,7 @@ export function URLInput() {
       }
       setUrl('')
     } catch (err: any) {
-      setParseError(simplifyError(err.message || 'Failed to parse URL', t))
+      setParseError(simplifyError(err.message || 'Failed to parse URL', t, trimmed))
     }
   }, [url, isParsing, useCookies, settings.cookieBrowser, setIsParsing, setParsedVideo, setParsedPlaylist, setParseError])
 

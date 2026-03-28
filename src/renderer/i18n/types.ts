@@ -13,6 +13,7 @@ export interface Translations {
   useCookies: string
   errorSignIn: string
   errorCookies: string
+  errorBilibili412: string
 
   // MainArea
   fetchingInfo: string

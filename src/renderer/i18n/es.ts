@@ -12,6 +12,7 @@ export const es: Translations = {
   useCookies: 'Usar cookies del navegador',
   errorSignIn: 'YouTube requiere inicio de sesión. Activa "Usar cookies del navegador" y vuelve a intentarlo.',
   errorCookies: 'No se pudieron leer las cookies del navegador. Cierra el navegador y vuelve a intentarlo, o cambia a otro navegador.',
+  errorBilibili412: 'Bilibili bloqueó esta solicitud. Activa "Usar cookies del navegador", selecciona tu navegador y vuelve a intentarlo.',
 
   fetchingInfo: 'Obteniendo información del video…',
   dropUrl: 'Suelta la URL para descargar',

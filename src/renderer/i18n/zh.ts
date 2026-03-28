@@ -12,6 +12,7 @@ export const zh: Translations = {
   useCookies: '使用浏览器 Cookie',
   errorSignIn: 'YouTube 需要登录。请启用"使用浏览器 Cookie"后重试。',
   errorCookies: '无法读取浏览器 Cookie。请关闭浏览器后重试，或切换至其他浏览器。',
+  errorBilibili412: 'Bilibili 拒绝了此请求。请勾选"使用浏览器 Cookie"，选择对应浏览器后重试。',
 
   fetchingInfo: '正在获取视频信息…',
   dropUrl: '拖放链接以下载',

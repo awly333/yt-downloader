@@ -12,6 +12,7 @@ export const fr: Translations = {
   useCookies: 'Utiliser les cookies du navigateur',
   errorSignIn: 'YouTube nécessite une connexion. Activez « Utiliser les cookies du navigateur » et réessayez.',
   errorCookies: 'Impossible de lire les cookies du navigateur. Fermez le navigateur et réessayez, ou changez de navigateur.',
+  errorBilibili412: 'Bilibili a bloqué cette requête. Activez « Utiliser les cookies du navigateur », sélectionnez votre navigateur et réessayez.',
 
   fetchingInfo: 'Récupération des informations…',
   dropUrl: 'Déposez l\'URL pour télécharger',

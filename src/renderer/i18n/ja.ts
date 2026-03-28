@@ -12,6 +12,7 @@ export const ja: Translations = {
   useCookies: 'ブラウザのCookieを使用',
   errorSignIn: 'YouTubeはログインが必要です。「ブラウザのCookieを使用」を有効にして再試行してください。',
   errorCookies: 'ブラウザのCookieを読み取れませんでした。ブラウザを閉じてから再試行するか、別のブラウザに切り替えてください。',
+  errorBilibili412: 'Bilibiliにブロックされました。「ブラウザのCookieを使用」を有効にし、ブラウザを選択して再試行してください。',
 
   fetchingInfo: '動画情報を取得中…',
   dropUrl: 'URLをドロップしてダウンロード',

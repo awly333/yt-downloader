@@ -12,6 +12,7 @@ export const ko: Translations = {
   useCookies: '브라우저 쿠키 사용',
   errorSignIn: 'YouTube 로그인이 필요합니다. "브라우저 쿠키 사용"을 활성화하고 다시 시도하세요.',
   errorCookies: '브라우저 쿠키를 읽을 수 없습니다. 브라우저를 닫고 다시 시도하거나 다른 브라우저로 전환하세요.',
+  errorBilibili412: 'Bilibili가 요청을 차단했습니다. "브라우저 쿠키 사용"을 활성화하고 브라우저를 선택한 후 다시 시도하세요.',
 
   fetchingInfo: '동영상 정보 가져오는 중…',
   dropUrl: 'URL을 놓아 다운로드',
