@@ -180,26 +180,29 @@ export function registerIpcHandlers(): void {
     try { fs.rmSync(path.join(userDataPath, 'cookies'), { recursive: true, force: true }) } catch {}
 
     if (process.platform === 'win32') {
-      // Schedule full userData cleanup after the process exits (some Electron
-      // files are locked while the app is running).
-      const cleanupScript = [
+      const installDir = path.dirname(app.getPath('exe'))
+      const uninstallerPath = path.join(installDir, 'Uninstall YT Downloader.exe')
+
+      // After the app exits, the batch script:
+      //   1. removes userData (AppData\Roaming\yt-downloader)
+      //   2. runs the NSIS uninstaller synchronously (clears AppData\Local\Programs\yt-downloader)
+      //   3. removes any remaining installation folder (handles leftover empty dir)
+      //   4. deletes itself
+      const lines = [
         '@echo off',
         'timeout /t 4 /nobreak > nul',
         `rmdir /s /q "${userDataPath}"`,
-        'del "%~f0"',
-      ].join('\r\n')
-      const scriptPath = path.join(app.getPath('temp'), 'yt-downloader-cleanup.bat')
-      fs.writeFileSync(scriptPath, cleanupScript)
-      spawn('cmd', ['/c', scriptPath], { detached: true, stdio: 'ignore' }).unref()
-
-      // Run the NSIS uninstaller silently
-      const uninstallerPath = path.join(
-        path.dirname(app.getPath('exe')),
-        'Uninstall YT Downloader.exe',
-      )
+      ]
       if (fs.existsSync(uninstallerPath)) {
-        spawn(uninstallerPath, ['/S'], { detached: true, stdio: 'ignore' }).unref()
+        lines.push(`start /wait "" "${uninstallerPath}" /S`)
+        lines.push('timeout /t 2 /nobreak > nul')
       }
+      lines.push(`rmdir /s /q "${installDir}"`)
+      lines.push('del "%~f0"')
+
+      const scriptPath = path.join(app.getPath('temp'), 'yt-downloader-cleanup.bat')
+      fs.writeFileSync(scriptPath, lines.join('\r\n'))
+      spawn('cmd', ['/c', scriptPath], { detached: true, stdio: 'ignore' }).unref()
     } else if (process.platform === 'darwin') {
       // Move the .app bundle to trash, then clean up userData
       const appBundle = path.resolve(app.getPath('exe'), '../../..')
