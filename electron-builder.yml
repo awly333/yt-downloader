@@ -67,7 +67,6 @@ mac:
 
 dmg:
   title: YT Downloader ${version}
-  background: build/dmg-background.png
   icon: build/icon.icns
   iconSize: 80
   window:
