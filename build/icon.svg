@@ -1,34 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0%" stop-color="#F28060"/>
-      <stop offset="100%" stop-color="#BF3820"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FAF4ED"/>
+      <stop offset="100%" stop-color="#EADDCF"/>
     </linearGradient>
-    <!-- Subtle inner shadow for depth -->
-    <filter id="inner-shadow" x="-5%" y="-5%" width="110%" height="110%">
-      <feOffset dx="0" dy="2"/>
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFDFC"/>
+      <stop offset="100%" stop-color="#F2E7DB"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFDFB"/>
+      <stop offset="100%" stop-color="#F8EEE3"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFAE79"/>
+      <stop offset="100%" stop-color="#ED5D22"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#C7B4A1" flood-opacity="0.14"/>
+    </filter>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#D7C5B6" flood-opacity="0.18"/>
     </filter>
   </defs>
 
-  <!-- Background: rounded square (iOS-style, ~22% radius) -->
-  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+  <rect x="72" y="72" width="880" height="880" rx="210" fill="url(#bg)" filter="url(#shadow)"/>
+  <rect x="72" y="72" width="880" height="880" rx="210" fill="none" stroke="#FFFDFB" stroke-width="10"/>
+  <rect x="78" y="78" width="868" height="868" rx="204" fill="none" stroke="#E4D7CA" stroke-width="4" opacity="0.9"/>
 
-  <!-- Subtle top-left highlight for depth -->
-  <ellipse cx="320" cy="200" rx="280" ry="160" fill="rgba(255,255,255,0.08)"/>
+  <g filter="url(#soft-shadow)">
+    <rect x="230" y="250" width="564" height="406" rx="68" fill="url(#panel)" stroke="#E1D3C5" stroke-width="12"/>
+    <path d="M230 354C230 316.445 260.445 286 298 286H726C763.555 286 794 316.445 794 354V394H230V354Z" fill="#F4E9DE"/>
+    <circle cx="290" cy="336" r="22" fill="#F37942"/>
+    <circle cx="338" cy="336" r="18" fill="#E9D9C8"/>
+    <circle cx="386" cy="336" r="18" fill="#D8CCC0"/>
 
-  <!-- Download arrow: vertical shaft (pill shape) -->
-  <rect x="468" y="196" width="88" height="356" rx="44" fill="white"/>
+    <rect x="232" y="392" width="560" height="262" rx="54" fill="url(#screen)" stroke="#E7DACC" stroke-width="8"/>
 
-  <!--
-    Arrowhead: downward-pointing triangle
-    Width: 256→768 (512px wide) at y=524
-    Tip: 512,764
-    Shaft overlaps triangle top by 32px (556-524=32) for seamless join
-  -->
-  <polygon points="256,524 768,524 512,764" fill="white"/>
+    <polygon points="438,430 438,592 582,511" fill="url(#accent)"/>
+    <rect x="478" y="588" width="68" height="162" rx="34" fill="url(#accent)"/>
+    <path d="M418 704L512 798L606 704" fill="none" stroke="#ED5D22" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Bottom tray: pill-shaped line representing the download destination -->
-  <rect x="244" y="812" width="536" height="76" rx="38" fill="white" opacity="0.88"/>
+    <path d="M286 778H374" stroke="#B9ADA2" stroke-width="18" stroke-linecap="round"/>
+    <path d="M650 778H738" stroke="#B9ADA2" stroke-width="18" stroke-linecap="round"/>
+    <path d="M294 778C294 804.51 315.49 826 342 826H682C708.51 826 730 804.51 730 778" fill="none" stroke="#D0C2B5" stroke-width="18" stroke-linecap="round"/>
+  </g>
 </svg>
