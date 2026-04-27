@@ -32,8 +32,6 @@ extraResources:
 # ─── Windows ─────────────────────────────────────────────────────────────────
 win:
   icon: build/icon.ico
-  signAndEditExecutable: false
-  verifyUpdateCodeSignature: false
   target:
     - target: nsis
       arch: [x64]
