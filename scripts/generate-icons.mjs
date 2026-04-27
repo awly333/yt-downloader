@@ -1,6 +1,6 @@
 /**
  * generate-icons.mjs
- * Converts build/icon.svg -> build/icon.png (1024x1024) and build/icon.ico
+ * Converts build/icon.svg -> build/icon.png, build/icon.ico and build/installer-icon.ico
  *
  * Usage: node scripts/generate-icons.mjs
  * Requires: @resvg/resvg-js, png-to-ico
@@ -33,6 +33,7 @@ writeFileSync(pngPath, pngData)
 console.log(`Generated build/icon.png (${pngData.length} bytes)`)
 
 const icoPath = join(buildDir, 'icon.ico')
+const installerIcoPath = join(buildDir, 'installer-icon.ico')
 const pythonResult = spawnSync(
   'python',
   ['-'],
@@ -43,6 +44,7 @@ const pythonResult = spawnSync(
       'from PIL import Image',
       `img = Image.open(r"${pngPath.replace(/\\/g, '\\\\')}").convert("RGBA")`,
       `img.save(r"${icoPath.replace(/\\/g, '\\\\')}", format="ICO", sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])`,
+      `img.save(r"${installerIcoPath.replace(/\\/g, '\\\\')}", format="ICO", sizes=[(16,16),(24,24),(32,32),(48,48)])`,
       "print('ok')",
     ].join('\n'),
   }
@@ -50,6 +52,7 @@ const pythonResult = spawnSync(
 
 if (pythonResult.status === 0) {
   console.log('Generated build/icon.ico with Pillow')
+  console.log('Generated build/installer-icon.ico with Pillow')
 } else {
   const icoData = await pngToIco([pngPath])
   writeFileSync(icoPath, icoData)

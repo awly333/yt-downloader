@@ -46,8 +46,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: YT Downloader
-  installerIcon: build/icon.ico
-  uninstallerIcon: build/icon.ico
+  installerIcon: build/installer-icon.ico
+  uninstallerIcon: build/installer-icon.ico
   deleteAppDataOnUninstall: false
 
 # ─── macOS ───────────────────────────────────────────────────────────────────
