@@ -1,16 +1,17 @@
 /**
  * generate-icons.mjs
- * Converts build/icon.svg → build/icon.png (1024×1024) and build/icon.ico
+ * Converts build/icon.svg -> build/icon.png (1024x1024) and build/icon.ico
  *
  * Usage: node scripts/generate-icons.mjs
- * Requires: @resvg/resvg-js, png-to-ico  (dev dependencies)
+ * Requires: @resvg/resvg-js, png-to-ico
  */
 
 import { Resvg } from '@resvg/resvg-js'
+import { spawnSync } from 'child_process'
 import pngToIco from 'png-to-ico'
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
-import { fileURLToPath } from 'url'
+import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
@@ -18,7 +19,6 @@ const buildDir = join(root, 'build')
 
 mkdirSync(buildDir, { recursive: true })
 
-// ─── 1. Render SVG → 1024×1024 PNG ──────────────────────────────────────────
 const svgPath = join(buildDir, 'icon.svg')
 const svgData = readFileSync(svgPath, 'utf-8')
 
@@ -30,22 +30,30 @@ const resvg = new Resvg(svgData, {
 const pngData = resvg.render().asPng()
 const pngPath = join(buildDir, 'icon.png')
 writeFileSync(pngPath, pngData)
-console.log(`✓ build/icon.png  (${pngData.length} bytes)`)
+console.log(`Generated build/icon.png (${pngData.length} bytes)`)
 
-// ─── 2. PNG → ICO (multi-size: 16, 32, 48, 64, 128, 256) ────────────────────
-// Render SVG at each ICO size for crisp icons at every scale
-const icoSizes = [16, 32, 48, 64, 128, 256]
-const pngBuffers = icoSizes.map((size) => {
-  const r = new Resvg(svgData, {
-    fitTo: { mode: 'width', value: size },
-    font: { loadSystemFonts: false },
-  })
-  return r.render().asPng()
-})
-
-const icoData = await pngToIco(pngBuffers)
 const icoPath = join(buildDir, 'icon.ico')
-writeFileSync(icoPath, icoData)
-console.log(`✓ build/icon.ico  (${icoData.length} bytes, sizes: ${icoSizes.join(', ')}px)`)
+const pythonResult = spawnSync(
+  'python',
+  ['-'],
+  {
+    stdio: 'pipe',
+    encoding: 'utf-8',
+    input: [
+      'from PIL import Image',
+      `img = Image.open(r"${pngPath.replace(/\\/g, '\\\\')}").convert("RGBA")`,
+      `img.save(r"${icoPath.replace(/\\/g, '\\\\')}", format="ICO", sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])`,
+      "print('ok')",
+    ].join('\n'),
+  }
+)
 
-console.log('\nIcon generation complete.')
+if (pythonResult.status === 0) {
+  console.log('Generated build/icon.ico with Pillow')
+} else {
+  const icoData = await pngToIco([pngPath])
+  writeFileSync(icoPath, icoData)
+  console.log(`Generated build/icon.ico with png-to-ico (${icoData.length} bytes)`)
+}
+
+console.log('Icon generation complete.')
